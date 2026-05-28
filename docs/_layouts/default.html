@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="{{ site.lang | default: " en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    {% seo %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    {% include head-custom.html %}
+  </head>
+  <body>
+    <div id="header">
+      <nav>
+        <li class="fork"><a href="{{ site.github.repository_url }}">View On GitHub</a></li>
+        {% if site.show_downloads %}
+          <li class="downloads"><a href="{{ site.github.zip_url }}">ZIP</a></li>
+          <li class="downloads"><a href="{{ site.github.tar_url }}">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        {% endif %}
+      </nav>
+    </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>{{ site.title | default: site.github.repository_name }}</h1>
+          <p>{{ site.description | default: site.github.project_tagline }}</p>
+          <hr>
+          <span class="credits left">
+            Project maintained by
+            <a href="https://github.com/{{ site.github.owner_name }}">{{ site.github.owner_name }}</a>
+            and Maria Fernanda Paulino Gomes
+          </span>
+          <span class="credits right">Hosted on GitHub Pages<br>&mdash; Theme by <a href="https://twitter.com/mattgraham">mattgraham</a></span>
+        </div>
+
+        {{ content }}
+
+      </section>
+
+    </div>
+    <script src="{{ '/assets/js/scale.fix.js' | relative_url }}"></script>
+  </body>
+</html>
