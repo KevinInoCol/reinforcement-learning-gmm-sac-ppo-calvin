@@ -1,0 +1,15 @@
+title: SAC-GMM on CALVIN
+description: >-
+  Reproducibility study of "Robot Skill Adaptation via Soft Actor-Critic
+  Gaussian Mixture Models" (Nematollahi et al., ICRA 2022) applied to the
+  CALVIN manipulation benchmark.
+theme: jekyll-theme-minimal
+markdown: kramdown
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - CONTRIBUTING.md
+  - README.md

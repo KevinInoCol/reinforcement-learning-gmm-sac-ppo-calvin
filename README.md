@@ -1,103 +1,93 @@
-# SAC-GMM
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# reinforcement-learning-gmm-sac-ppo-calvin
 
-[<b>Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models</b>](http://ais.informatik.uni-freiburg.de/publications/papers/nematollahi22icra.pdf)
+Reproducibility study and benchmark of skill-learning RL methods on
+[CALVIN](https://github.com/mees/calvin), based on
+**"Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models"**
+([Nematollahi et al., ICRA 2022](http://ais.informatik.uni-freiburg.de/publications/papers/nematollahi22icra.pdf)).
 
-[Iman Nematollahi*](https://imanema.com/), 
-[Erick Rosete Beas*](https://erickrosete.com/), 
-[Adrian Röfer](https://rl.uni-freiburg.de/people/roefer), 
-[Tim Welschehold](http://www2.informatik.uni-freiburg.de/~twelsche/),
-[Abhinav Valada](https://rl.uni-freiburg.de/people/valada),
-[Wolfram Burgard](http://www2.informatik.uni-freiburg.de/~burgard)
+> **Paper in preparation.** Project page with current results, videos and
+> training curves: **[live progress site](https://kevininocol.github.io/reinforcement-learning-gmm-sac-ppo-calvin/)**.
 
-We present **SAC-GMM**, ...
+## Methods evaluated
 
-## Installation
-To begin, clone this repository locally
+| Method | Type | Reproduced |
+|---|---|---|
+| **GMM only** | Offline LfD (Bayesian GMM, K=3) | ✅ |
+| **SAC pure** | Online RL with sparse reward (via [SB3](https://github.com/DLR-RM/stable-baselines3)) | 🟡 in progress |
+| **SAC-GMM** | Hybrid (GMM + SAC refining trajectory parameters every N steps) | ✅ |
+
+Skill: **`open_drawer`** on **CALVIN scene D** (`task_D_D` split).
+
+## Quick replication
+
 ```bash
-git clone https://github.com/nematoli/sac_gmm.git
-export SACGMM_ROOT=$(pwd)/sac_gmm
+# 1) Extract demos for the skill
+python scripts/extract_calvin_demos.py skill=calvin_open_drawer
 
-```
-Install requirements:
-```bash
-cd SACGMM_ROOT
-conda create -n sacgmm_venv python=3.8
-conda activate sacgmm_venv
-sh install.sh
-```
+# 2) Fit the GMM (offline, K=3)
+python scripts/gmm_train.py skill=calvin_open_drawer logger=tb_logger
 
+# 3) Train SAC on top of the GMM (cluster, ~8h GPU)
+sbatch run_sac_gmm.sbatch
 
-For Development:
-```bash
-pip install -r requirements-dev.txt
-pre-commit install
-```
+# 4) Train pure SAC baseline (Stable-Baselines3)
+sbatch run_sac_sb3.sbatch
 
-
-## Download
-Download the [CALVIN dataset](https://github.com/mees/calvin) and place it inside [dataset/](./dataset/). 
-
-## Skill Library
-
-### Step 1: Extract skill demos from the CALVIN dataset
-Configure [config/demos.yaml](./config/demos.yaml).
-```
-> python sacgmm/extract_demos.py skill='open_drawer'
+# 5) Evaluate with GUI + record video
+python scripts/agent_eval_record.py \
+    skill=calvin_open_drawer agent=sac_gmm_calvin \
+    chk_dir="$(pwd)/checkpoints/sac_gmm_open_drawer_best.ckpt" \
+    show_gui=true env.calvin_env.env.show_gui=true \
+    env.calvin_env.env.use_egl=false \
+    num_eval_episodes=5 num_eval_seeds=1
 ```
 
-### Step 2: Train and evaluate skill libraries (Dynamical Systems) with ManifoldGMM 
-Configure [config/gmm_train.yaml](./config/gmm_train.yaml).
+Full setup instructions: see [`docs/setup.md`](docs/setup.md).
+
+## Repository layout
+
 ```
-> python sac_gmm/scripts/gmm_train.py skill='open_drawer'
+.
+├── docs/                         # GitHub Pages site (live results, methodology)
+├── scripts/                      # Training / eval entry points
+│   ├── extract_calvin_demos.py   # Pull skill trajectories from CALVIN
+│   ├── gmm_train.py              # Offline Bayesian GMM fit
+│   ├── sac_gmm_train.py          # The paper's method (Lightning)
+│   ├── sac_train_sb3.py          # Pure SAC baseline via Stable-Baselines3
+│   └── agent_eval_record.py      # Eval with GUI + MP4 recording + CSV metrics
+├── src/sac_gmm/                  # Core library (agents, models, envs)
+├── config/                       # Hydra configs
+├── calvin_env/                   # Submodule (CALVIN simulator)
+├── Output_Inference/             # Generated videos + results table
+│   ├── videos/                   # eval_*.mp4
+│   └── results_table/            # eval_results.csv + per-run JSON
+└── results_22003/                # Training curves of the SAC-GMM run
 ```
 
-Configure [config/gmm_eval.yaml](./config/gmm_eval.yaml).
-```
-> python sac_gmm/scripts/gmm_eval.py skill='open_drawer'
-```
+## Reproducibility fixes applied to the upstream
 
-### Pre-trained Models
-We provide our final models for ...
-```bash
-cd SACGMM_ROOT/checkpoints
-sh download_model_weights.sh
-```
+This repo includes patches on top of [`nematoli/sac_gmm`](https://github.com/nematoli/sac_gmm):
 
+1. **Hydra `config_path`** resolved via `Path(__file__)` for paths with spaces.
+2. **`bayesian_gmm.log_table`** made no-op when not using `WandbLogger`.
+3. **`plot_utils`** uses `matplotlib.tab10` so K > 7 components don't crash.
+4. **`calvin_env.play_table_env`** patched for editable installs (`__file__ is None`).
+5. **Missing `sac_gmm.models.sac_model.SAC`** implemented (Lightning module).
+6. **Pure SAC training via SB3** (clean alternative to the broken native one).
 
-## Training
-```
-python 
-```
+See [`docs/changelog.md`](docs/changelog.md) for the full log.
 
-### Ablations
-```
-python 
-```
+## Upstream attribution
 
-## Evaluation
+This work builds on top of the official codebase. The original README is
+preserved at [`README_upstream_sac_gmm.md`](README_upstream_sac_gmm.md).
+
 ```
-python 
-```
-
-## Citation
-
-If you find the code useful, please cite:
-
-**SAC-GMM**
-```bibtex
 @inproceedings{nematollahi22icra,
-    author  = {Iman Nematollahi and Erick Rosete-Beas and Adrian Roefer and Tim Welschehold and Abhinav Valada and Wolfram Burgard},
-    title   = {Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models},
-    booktitle = {Proceedings of the IEEE International Conference on Robotics and Automation  (ICRA)},
-    pages={8651-8657},
-    year = 2022,
-    url={http://ais.informatik.uni-freiburg.de/publications/papers/nematollahi22icra.pdf},
-    address = {Philadelphia, USA}
+    author    = {Iman Nematollahi and Erick Rosete-Beas and Adrian Roefer
+                 and Tim Welschehold and Abhinav Valada and Wolfram Burgard},
+    title     = {Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models},
+    booktitle = {ICRA},
+    year      = {2022}
 }
 ```
-
-## License
-
-MIT License
