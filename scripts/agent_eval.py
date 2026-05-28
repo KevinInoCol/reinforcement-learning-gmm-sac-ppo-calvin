@@ -53,7 +53,7 @@ def run_test(cfg: DictConfig) -> None:
                 model = SACGMM
             elif cfg.agent.name == "KISGMM":
                 model = KISGMM
-            model.load_from_checkpoint(checkpoint_path=chk.as_posix(), agent=cfg.agent).to(cfg.device)
+            model = model.load_from_checkpoint(checkpoint_path=chk.as_posix(), agent=cfg.agent).to(cfg.device)
             agent = model.agent
             actor = model.actor
         else:
@@ -64,7 +64,7 @@ def run_test(cfg: DictConfig) -> None:
     accs = []
     for s in range(cfg.num_eval_seeds):
         seed_everything(cfg.seed + s, workers=True)
-        eval_accuracy, eval_return, eval_length = agent.evaluate(actor)
+        eval_accuracy, eval_return, eval_length = agent.evaluate(actor, device=cfg.device)
         accs.append(eval_accuracy)
 
     mean_acc = np.mean(np.array(accs))
@@ -72,7 +72,7 @@ def run_test(cfg: DictConfig) -> None:
     log_rank_0(f"Mean: {mean_acc}, Var: {var_acc}")
 
 
-@hydra.main(version_base="1.1", config_path="../config", config_name="agent_eval")
+@hydra.main(version_base="1.1", config_path=str(sac_gmm_path / "config"), config_name="agent_eval")
 def eval_agent(cfg: DictConfig) -> None:
     run_test(cfg)
 

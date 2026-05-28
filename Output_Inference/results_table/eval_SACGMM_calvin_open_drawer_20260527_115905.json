@@ -1,0 +1,24 @@
+{
+  "timestamp": "20260527_115905",
+  "agent": "SACGMM",
+  "skill": "calvin_open_drawer",
+  "env": "calvin",
+  "num_eval_episodes": 5,
+  "num_eval_seeds": 1,
+  "n_components_gmm": 3,
+  "chk_dir": "/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/checkpoints/sac_gmm_open_drawer_best.ckpt",
+  "video_path": "/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/Output_Inference/videos/eval_SACGMM_calvin_open_drawer_20260527_115821.mp4",
+  "accuracy_per_seed": [
+    0.8
+  ],
+  "accuracy_mean": 0.8,
+  "accuracy_var": 0.0,
+  "return_per_seed": [
+    8.0
+  ],
+  "return_mean": 8.0,
+  "length_per_seed": [
+    57.2
+  ],
+  "length_mean": 57.2
+}

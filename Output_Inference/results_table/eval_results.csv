@@ -1,0 +1,3 @@
+timestamp,agent,skill,num_eval_episodes,num_eval_seeds,n_components_gmm,accuracy_mean,accuracy_var,accuracy_per_seed,return_mean,length_mean,chk_dir,video_path
+20260527_115533,GMM,calvin_open_drawer,5,1,3,0.2,0.0,[0.2],2.0,60.4,,/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/Output_Inference/videos/eval_GMM_calvin_open_drawer_20260527_115447.mp4
+20260527_115905,SACGMM,calvin_open_drawer,5,1,3,0.8,0.0,[0.8],8.0,57.2,/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/checkpoints/sac_gmm_open_drawer_best.ckpt,/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/Output_Inference/videos/eval_SACGMM_calvin_open_drawer_20260527_115821.mp4

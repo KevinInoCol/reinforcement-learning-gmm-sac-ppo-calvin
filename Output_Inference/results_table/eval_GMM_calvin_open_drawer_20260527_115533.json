@@ -1,0 +1,24 @@
+{
+  "timestamp": "20260527_115533",
+  "agent": "GMM",
+  "skill": "calvin_open_drawer",
+  "env": "calvin",
+  "num_eval_episodes": 5,
+  "num_eval_seeds": 1,
+  "n_components_gmm": 3,
+  "chk_dir": null,
+  "video_path": "/Users/kevininofuente/Documents/UNICAMP DOCTORADO/Project-Reinforment-Learning/Output_Inference/videos/eval_GMM_calvin_open_drawer_20260527_115447.mp4",
+  "accuracy_per_seed": [
+    0.2
+  ],
+  "accuracy_mean": 0.2,
+  "accuracy_var": 0.0,
+  "return_per_seed": [
+    2.0
+  ],
+  "return_mean": 2.0,
+  "length_per_seed": [
+    60.4
+  ],
+  "length_mean": 60.4
+}

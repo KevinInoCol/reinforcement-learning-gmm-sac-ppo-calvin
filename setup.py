@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     def _read(f):
         return open(op.join(op.dirname(__file__), f)).read() if op.exists(f) else ""
 
-    _meta = _read("sac_gmm/__init__.py")
+    _meta = _read("src/sac_gmm/__init__.py")
 
     def find_meta(_meta, string):
         l_match = re.search(r"^" + string + r'\s*=\s*"(.*)"', _meta, re.M)
@@ -40,10 +40,11 @@ except ModuleNotFoundError:
         author=find_meta(_meta, "__author__"),
         author_email=find_meta(_meta, "__email__"),
         url=" https://github.com/nematoli/sac_gmm",
-        packages=find_packages(exclude=["tests"]),
+        packages=find_packages(where="src", exclude=["tests"]),
+        package_dir={"": "src"},
         install_requires=install_requires,
     )
 
     if __name__ == "__main__":
-        print("find_package", find_packages(exclude=["tests"]))
+        print("find_package", find_packages(where="src", exclude=["tests"]))
         setup(**meta)

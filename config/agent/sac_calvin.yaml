@@ -1,8 +1,13 @@
+# Agent config para SAC puro.
+# Hereda gmm/encoder/kp_mock del default.yaml porque CALVINAgent (clase
+# padre) los requiere. SACAgent agrega exp_dir y record.
+
 defaults:
   - default
 
-name: SAC
 calvin_env: ${env}
+exp_dir: ${exp_dir}
+record: ${record}
 
 _target_: sac_gmm.agents.calvin.sac_agent.SACAgent
 _recursive_: false

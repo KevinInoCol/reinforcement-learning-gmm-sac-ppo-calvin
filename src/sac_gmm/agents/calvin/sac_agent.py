@@ -26,40 +26,45 @@ class SACAgent(CALVINAgent):
         num_init_steps: int,
         num_eval_episodes: int,
         skill: DictConfig,
-        exp_dir: str,
+        gmm: DictConfig,
+        encoder: DictConfig,
+        kp_mock: DictConfig,
         render: bool,
-        record: bool,
+        # Args opcionales propios de SACAgent (no en CALVINAgent)
+        exp_dir: str = None,
+        record: bool = False,
     ) -> None:
+        # CALVINAgent (parent) requires gmm/encoder/kp_mock; SAC puro no usa el
+        # gmm para acción pero el código padre los instancia igual. Pasamos
+        # los configs y dejamos que CALVINAgent maneje su lifecycle.
         super(SACAgent, self).__init__(
             name="SAC",
             env=calvin_env,
+            datamodule=datamodule,
             num_init_steps=num_init_steps,
             num_eval_episodes=num_eval_episodes,
+            skill=skill,
+            gmm=gmm,
+            encoder=encoder,
+            kp_mock=kp_mock,
+            render=render,
         )
 
-        self.skill = skill
-
-        # Environment
+        # Environment - skill ya está seteado por CALVINAgent.__init__
         self.env.set_skill(self.skill)
         self.robot_obs, self.cam_obs = self.env.obs_allowed
-        # # TODO: find the transforms for this
-        # env.set_obs_transforms(cfg.datamodule.transforms)
 
-        # record setup
-        self.video_dir = os.path.join(exp_dir, "videos")
-        os.makedirs(self.video_dir, exist_ok=True)
-        self.env.set_outdir(self.video_dir)
-        self.render = render
+        # record setup (extras propios de SACAgent)
+        if exp_dir is not None:
+            self.video_dir = os.path.join(exp_dir, "videos")
+            os.makedirs(self.video_dir, exist_ok=True)
+            self.env.set_outdir(self.video_dir)
         self.record = record
-
-        # Dataset (helps with EE start positions)
-        self.datamodule = hydra.utils.instantiate(datamodule)
-        self.reset()
 
     def reset(self) -> None:
         """Resets the environment, moves the EE to a good start state and updates the agent state"""
         super().reset()
-        self.obs = self.env.sample_start_position(self.datamodule.dataset)
+        self.obs = self.env.reset()
 
     def get_state_dim(self):
         """Returns the size of the state based on env's observation space"""
@@ -125,7 +130,7 @@ class SACAgent(CALVINAgent):
             episode_return = 0
             self.obs = self.env.reset()
             # Start from a known starting point
-            self.obs = self.env.sample_start_position(self.datamodule.dataset)
+            self.obs = self.env.reset()
             # Recording setup
             if self.record and (episode == rand_idx):
                 self.env.reset_recorded_frames()

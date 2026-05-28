@@ -2,7 +2,7 @@ defaults:
   - setup
   - skill_setup
   - callbacks: default
-  - sac: sac_model
+  - lightning: sac_model
   - logger: wandb
   - trainer: default
 

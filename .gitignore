@@ -163,3 +163,27 @@ runs/
 *.npy
 *.npz
 *.gif
+
+# macOS metadata
+.DS_Store
+
+# Local-only configs (paths/username del Mac, no para repo público)
+config/setup.yaml
+COMANDOS.md
+dataset/README.md
+
+# Modelos entrenados (~70 MB cada uno; usar Git LFS si se quiere hacer públicos)
+checkpoints/
+
+# wandb local cache
+wandb/
+
+# replay buffers (pueden ser GB)
+**/replay_buffer/
+
+# TB events (binarios pesados; los plots PNG sí van)
+**/tb_logs/
+**/tb/
+
+# Hydra multirun
+multirun/

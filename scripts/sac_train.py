@@ -10,7 +10,7 @@ from pytorch_lightning import seed_everything, Trainer
 from pytorch_lightning.utilities import rank_zero_only
 from sac_gmm.utils.utils import print_system_env_info, setup_logger, setup_callbacks, get_last_checkpoint
 
-from sac_gmm.models.sac_gmm_model import SACGMM
+from sac_gmm.models.sac_model import SAC
 
 cwd_path = Path(__file__).absolute().parents[0]  # scripts
 sac_gmm_path = cwd_path.parents[0]
@@ -29,7 +29,7 @@ def log_rank_0(*args, **kwargs):
     logger.info(*args, **kwargs)
 
 
-@hydra.main(version_base="1.1", config_path="../config", config_name="sac_train")
+@hydra.main(version_base="1.1", config_path=str(sac_gmm_path / "config"), config_name="sac_train")
 def train(cfg: DictConfig) -> None:
     cfg.exp_dir = hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"]
     model_dir = Path(cfg.exp_dir) / "model_weights/"
@@ -43,9 +43,9 @@ def train(cfg: DictConfig) -> None:
 
     # Load Model
     if chk is not None:
-        model = SACGMM.load_from_checkpoint(chk.as_posix())
+        model = SAC.load_from_checkpoint(chk.as_posix())
     else:
-        model = hydra.utils.instantiate(cfg.sac)
+        model = hydra.utils.instantiate(cfg.lightning)
 
     # Setup logger
     # logger_name = f"{cfg.skill}_{cfg.state_type}_{gmm.name}_{gmm.n_components}"

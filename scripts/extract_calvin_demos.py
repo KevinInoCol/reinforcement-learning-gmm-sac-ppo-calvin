@@ -35,7 +35,7 @@ def load_demonstrations(datamodule, mode):
     return demos
 
 
-@hydra.main(version_base="1.1", config_path="../config", config_name="extract_calvin_demos")
+@hydra.main(version_base="1.1", config_path=str(root / "config"), config_name="extract_calvin_demos")
 def extract_demos(cfg: DictConfig) -> None:
     """
     This is called to extract demonstrations for a specific skill.

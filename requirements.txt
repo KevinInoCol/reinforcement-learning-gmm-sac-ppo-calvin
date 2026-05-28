@@ -12,6 +12,5 @@ scipy
 imageio[ffmpeg]
 termcolor
 pymanopt
-mayavi
 wandb
 lightning-bolts

@@ -12,7 +12,8 @@ def visualize_3d_gmm(points, priors, means, covariances, save_dir):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
 
-    colors = ["r", "g", "b", "c", "m", "y", "k"]  # Color for each component
+    # Tab10 colormap supports up to 10 components without repeating
+    colors = [plt.cm.tab10(i) for i in range(max(len(priors), 1))]
 
     def update_frame(i):
         ax.cla()  # Clear the previous frame

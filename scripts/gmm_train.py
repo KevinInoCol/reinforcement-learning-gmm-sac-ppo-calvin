@@ -27,7 +27,7 @@ def log_rank_0(*args, **kwargs):
     logger.info(*args, **kwargs)
 
 
-@hydra.main(version_base="1.1", config_path="../config", config_name="gmm_train")
+@hydra.main(version_base="1.1", config_path=str(sac_gmm_path / "config"), config_name="gmm_train")
 def train_gmm(cfg: DictConfig) -> None:
     cfg.exp_dir = hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"]
 

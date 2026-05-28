@@ -1,4 +1,6 @@
 import logging
+import os
+import time
 import hydra
 from omegaconf import DictConfig
 import torch
@@ -9,6 +11,10 @@ import copy
 from pytorch_lightning.utilities import rank_zero_only
 from sac_gmm.utils.env_maker import make_env
 from sac_gmm.agents.agent import Agent
+
+# Visualization pacing: set env var SACGMM_STEP_DELAY (segundos) para slow-mo
+# Ejemplo: SACGMM_STEP_DELAY=0.05 python scripts/agent_eval.py ...
+_STEP_DELAY = float(os.environ.get("SACGMM_STEP_DELAY", "0.0"))
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +154,8 @@ class CALVINAgent(Agent):
 
                     if self.render:
                         self.env.render()
+                    if _STEP_DELAY > 0:
+                        time.sleep(_STEP_DELAY)
                     if done:
                         break
                 if done:

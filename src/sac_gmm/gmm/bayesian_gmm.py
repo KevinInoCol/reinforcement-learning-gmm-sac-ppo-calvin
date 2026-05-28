@@ -51,8 +51,9 @@ class BayesianGMM(BaseGMM):
         # Plot GMM
         if self.plot:
             outfile = self.plot_gmm()
-
-        self.logger.log_table(key="fit", columns=["GMM"], data=[[wandb.Video(outfile)]])
+            # log_table is wandb-only; skip silently for other loggers (e.g. TensorBoard)
+            if hasattr(self.logger, "log_table"):
+                self.logger.log_table(key="fit", columns=["GMM"], data=[[wandb.Video(outfile)]])
 
     def predict(self, x):
         cgmm = self.gmm.condition([0, 1, 2], x.reshape(1, -1))

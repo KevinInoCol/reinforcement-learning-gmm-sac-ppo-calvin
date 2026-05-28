@@ -1,0 +1,11 @@
+defaults:
+  - setup
+
+# Dataset params:
+name: calvin_lift_red_block_table
+state_type: 'pos'
+
+# GMM params
+n_components: 3
+
+T_obj_gripper: [0.0, 0.0, 0.15]
