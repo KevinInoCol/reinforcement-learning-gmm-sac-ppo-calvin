@@ -18,15 +18,66 @@ Reproducibility study and benchmark of skill-learning RL methods on
 
 Skill: **`open_drawer`** on **CALVIN scene D** (`task_D_D` split).
 
-## 🧪 Methods in development
+## 🧪 Métodos em desenvolvimento: GMM + PPO
 
-- **[GMM + PPO](docs/gmm_ppo.md)** — variant of SAC-GMM where the RL algorithm
-  is swapped for **Proximal Policy Optimization** (Stable-Baselines3) on top of
-  the same frozen Bayesian GMM skill prior. Implementation isolated under
-  [`scripts/gmm_ppo/`](scripts/gmm_ppo) to keep the GMM-only and SAC-GMM
-  pipelines intact. The page documents the architecture, the full list of
-  scripts/modules/Hydra configs that intervene at training time, and the
-  execution plan.
+> Variante de **SAC-GMM** em que o algoritmo de RL é substituído por
+> **Proximal Policy Optimization** ([Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3))
+> sobre o mesmo *skill prior* (GMM bayesiano K=3, congelado). Toda a
+> implementação fica isolada em [`scripts/gmm_ppo/`](scripts/gmm_ppo) para
+> **não alterar** o pipeline de GMM puro nem o de SAC-GMM, que já produziram
+> resultados.
+>
+> Página detalhada (arquitetura, configs Hydra, hipóteses):
+> [`docs/gmm_ppo.md`](docs/gmm_ppo.md).
+
+### Arquivos usados para o **treinamento** de GMM+PPO
+
+O treinamento depende de scripts próprios (escritos para este método) e de
+módulos do projeto que já existiam (reutilizados sem modificação).
+
+**Pré-requisitos** (rodam **antes**, uma vez por skill):
+
+| Arquivo | Função |
+|---|---|
+| `scripts/extract_calvin_demos.py` | Extrai as trajetórias de demonstração da skill (ex: `calvin_open_drawer`) do dataset CALVIN. Gera `training.npy`. |
+| `scripts/gmm_train.py` | Ajusta offline o GMM bayesiano (K=3) sobre as demos com `goal_centered=True`. Salva o modelo num `.npy` que o wrapper carregará. |
+
+**Scripts próprios do treinamento GMM+PPO** (em `scripts/gmm_ppo/`):
+
+| Arquivo | Função |
+|---|---|
+| `scripts/gmm_ppo/gmm_ppo_train_sb3.py` | **Entry-point do treinamento.** Compõe a config via Hydra, instancia o env CALVIN e o `GMMActionWrapper`, e treina `PPO("MlpPolicy", env)` da SB3. Inclui callbacks de avaliação, checkpoint e limite de wall-clock. |
+| `scripts/gmm_ppo/gmm_action_wrapper.py` | **Wrapper de gym** (cópia local; o original em `src/sac_gmm/envs/calvin/` fica intacto). Recebe Δθ como ação do PPO, aplica essa correção sobre uma cópia do GMM base, rollouteia N=32 passos do simulador, devolve obs + reward acumulado. O target dinâmico vem de `KeypointMock + kp_target_shift`, replicando a lógica canônica do `CALVINAgent`. |
+| `run_gmm_ppo_smoke.sbatch` | Job SLURM curto (~15 min, GPU `a5000`) para o smoke test de pipeline. O job de treinamento completo (~8h) é uma variante do mesmo arquivo. |
+
+**Módulos do projeto invocados pelo treinamento** (já existiam, são compartilhados com GMM-only e SAC-GMM):
+
+| Módulo | Como participa |
+|---|---|
+| `src/sac_gmm/utils/env_maker.py` | Função `make_env(...)` que constrói o `CalvinSkillEnv`. |
+| `src/sac_gmm/envs/calvin/skill_env.py` | Implementa o `CalvinSkillEnv`. Fornece `env.gt_keypoint` e `env.is_source`, ambos consumidos pelo wrapper. |
+| `src/sac_gmm/datasets/calvin_skill.py` | `CALVINSkillDataset`. Fornece `dataset.goal` (média das poses finais das demos), usado pelo wrapper como `demos_target`. |
+| `src/sac_gmm/keypoint/key_nets.py` | Classe `KeypointMock`. O wrapper a usa para detectar a pose atual do objeto-target em cada outer step. |
+| `src/sac_gmm/gmm/bayesian_gmm.py` | Classe do GMM. Instanciada via Hydra e `load_model()` lê o `.npy` salvo pelo `gmm_train.py`. |
+
+**Configs Hydra relevantes:** `config/sac_train.yaml` (raiz), `config/skill_setup.yaml`,
+`config/agent/sac_calvin.yaml`, `config/gmm/bayesian_gmm.yaml`,
+`config/kp_mock/default.yaml`, `config/skill/calvin_open_drawer.yaml`,
+`config/env/calvin_scene_D.yaml`.
+
+### Arquivos usados para a **inferência** (avaliação) de GMM+PPO
+
+| Arquivo | Função |
+|---|---|
+| `scripts/gmm_ppo/gmm_ppo_eval.py` | **Entry-point de avaliação.** Carrega o `.zip` PPO treinado, roda N episódios sobre o `GMMActionWrapper`. Suporta `--show_gui` (PyBullet com janela), `--record_video` (`STATE_LOGGING_VIDEO_MP4`) e `--step_delay` para slow-motion. Grava métricas em `Output_Inference/results_table/eval_*.json` e adiciona linha em `eval_results.csv`. |
+| `scripts/gmm_ppo/gmm_action_wrapper.py` | **Mesmo wrapper do treinamento, reutilizado.** Garante que a observação que chega ao PPO e o cálculo do target (KeypointMock + shift) sejam idênticos aos do treino. |
+| **`<modelo>.zip`** (`checkpoints/gmm_ppo_<skill>_best.zip` ou similar) | Pesos do PPO treinado. Não é um script mas é o artefato carregado pelo eval; sem ele a inferência não roda. |
+
+**Módulos do projeto invocados também na inferência** (mesmos do treinamento):
+`env_maker.py`, `skill_env.py`, `calvin_skill.py`, `key_nets.py`, `bayesian_gmm.py`.
+
+> 📝 A página está em **português** temporariamente. Quando os experimentos
+> estiverem completos e for hora de redigir o paper, traduziremos para inglês.
 
 ## Quick replication
 
