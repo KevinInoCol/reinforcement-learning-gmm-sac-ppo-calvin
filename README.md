@@ -18,6 +18,16 @@ Reproducibility study and benchmark of skill-learning RL methods on
 
 Skill: **`open_drawer`** on **CALVIN scene D** (`task_D_D` split).
 
+## 🧪 Methods in development
+
+- **[GMM + PPO](docs/gmm_ppo.md)** — variant of SAC-GMM where the RL algorithm
+  is swapped for **Proximal Policy Optimization** (Stable-Baselines3) on top of
+  the same frozen Bayesian GMM skill prior. Implementation isolated under
+  [`scripts/gmm_ppo/`](scripts/gmm_ppo) to keep the GMM-only and SAC-GMM
+  pipelines intact. The page documents the architecture, the full list of
+  scripts/modules/Hydra configs that intervene at training time, and the
+  execution plan.
+
 ## Quick replication
 
 ```bash
