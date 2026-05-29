@@ -5,6 +5,11 @@ skills sobre [CALVIN](https://github.com/mees/calvin), baseado em
 **"Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models"**
 ([Nematollahi et al., ICRA 2022](http://ais.informatik.uni-freiburg.de/publications/papers/nematollahi22icra.pdf)).
 
+> 👥 **Autores deste trabalho:**
+> **Kevin Adier Inofuente Colque** ([@KevinInoCol](https://github.com/KevinInoCol))
+> e **Maria Fernanda Paulino Gomes**.
+> Doutorado, UNICAMP.
+
 > **Paper em preparação.** Página do projeto com resultados atuais, vídeos e
 > curvas de treinamento: **[site com progresso ao vivo](https://kevininocol.github.io/reinforcement-learning-gmm-sac-ppo-calvin/)**.
 
