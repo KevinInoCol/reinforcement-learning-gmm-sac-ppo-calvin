@@ -1,22 +1,22 @@
 # reinforcement-learning-gmm-sac-ppo-calvin
 
-Reproducibility study and benchmark of skill-learning RL methods on
-[CALVIN](https://github.com/mees/calvin), based on
+Estudo de reprodutibilidade e benchmark de métodos de RL para aprendizado de
+skills sobre [CALVIN](https://github.com/mees/calvin), baseado em
 **"Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models"**
 ([Nematollahi et al., ICRA 2022](http://ais.informatik.uni-freiburg.de/publications/papers/nematollahi22icra.pdf)).
 
-> **Paper in preparation.** Project page with current results, videos and
-> training curves: **[live progress site](https://kevininocol.github.io/reinforcement-learning-gmm-sac-ppo-calvin/)**.
+> **Paper em preparação.** Página do projeto com resultados atuais, vídeos e
+> curvas de treinamento: **[site com progresso ao vivo](https://kevininocol.github.io/reinforcement-learning-gmm-sac-ppo-calvin/)**.
 
-## Methods evaluated
+## Métodos avaliados
 
-| Method | Type | Reproduced |
+| Método | Tipo | Reproduzido |
 |---|---|---|
-| **GMM only** | Offline LfD (Bayesian GMM, K=3) | ✅ |
-| **SAC pure** | Online RL with sparse reward (via [SB3](https://github.com/DLR-RM/stable-baselines3)) | 🟡 in progress |
-| **SAC-GMM** | Hybrid (GMM + SAC refining trajectory parameters every N steps) | ✅ |
+| **GMM only** | LfD offline (Bayesian GMM, K=3) | ✅ |
+| **SAC pure** | Online RL com recompensa esparsa (via [SB3](https://github.com/DLR-RM/stable-baselines3)) | 🟡 em andamento |
+| **SAC-GMM** | Híbrido (GMM + SAC refinando parâmetros da trajetória a cada N steps) | ✅ |
 
-Skill: **`open_drawer`** on **CALVIN scene D** (`task_D_D` split).
+Skill: **`open_drawer`** sobre **CALVIN scene D** (split `task_D_D`).
 
 ## 🧪 Métodos em desenvolvimento: GMM + PPO
 
@@ -79,22 +79,22 @@ módulos do projeto que já existiam (reutilizados sem modificação).
 > 📝 A página está em **português** temporariamente. Quando os experimentos
 > estiverem completos e for hora de redigir o paper, traduziremos para inglês.
 
-## Quick replication
+## Replicação rápida
 
 ```bash
-# 1) Extract demos for the skill
+# 1) Extrair demos da skill
 python scripts/extract_calvin_demos.py skill=calvin_open_drawer
 
-# 2) Fit the GMM (offline, K=3)
+# 2) Ajustar o GMM (offline, K=3)
 python scripts/gmm_train.py skill=calvin_open_drawer logger=tb_logger
 
-# 3) Train SAC on top of the GMM (cluster, ~8h GPU)
+# 3) Treinar SAC sobre o GMM (cluster, ~8h GPU)
 sbatch run_sac_gmm.sbatch
 
-# 4) Train pure SAC baseline (Stable-Baselines3)
+# 4) Treinar baseline SAC puro (Stable-Baselines3)
 sbatch run_sac_sb3.sbatch
 
-# 5) Evaluate with GUI + record video
+# 5) Avaliar com GUI + gravar vídeo
 python scripts/agent_eval_record.py \
     skill=calvin_open_drawer agent=sac_gmm_calvin \
     chk_dir="$(pwd)/checkpoints/sac_gmm_open_drawer_best.ckpt" \
@@ -103,45 +103,46 @@ python scripts/agent_eval_record.py \
     num_eval_episodes=5 num_eval_seeds=1
 ```
 
-Full setup instructions: see [`docs/setup.md`](docs/setup.md).
+Instruções completas de setup: ver [`docs/setup.md`](docs/setup.md).
 
-## Repository layout
+## Estrutura do repositório
 
 ```
 .
-├── docs/                         # GitHub Pages site (live results, methodology)
-├── scripts/                      # Training / eval entry points
-│   ├── extract_calvin_demos.py   # Pull skill trajectories from CALVIN
-│   ├── gmm_train.py              # Offline Bayesian GMM fit
-│   ├── sac_gmm_train.py          # The paper's method (Lightning)
-│   ├── sac_train_sb3.py          # Pure SAC baseline via Stable-Baselines3
-│   └── agent_eval_record.py      # Eval with GUI + MP4 recording + CSV metrics
-├── src/sac_gmm/                  # Core library (agents, models, envs)
-├── config/                       # Hydra configs
-├── calvin_env/                   # Submodule (CALVIN simulator)
-├── Output_Inference/             # Generated videos + results table
+├── docs/                         # Site do GitHub Pages (resultados ao vivo, metodologia)
+├── scripts/                      # Entry-points de treinamento / avaliação
+│   ├── extract_calvin_demos.py   # Extrai trajetórias de skill do CALVIN
+│   ├── gmm_train.py              # Ajuste offline do Bayesian GMM
+│   ├── sac_gmm_train.py          # Método do paper (Lightning)
+│   ├── sac_train_sb3.py          # Baseline SAC puro via Stable-Baselines3
+│   ├── agent_eval_record.py      # Eval com GUI + gravação MP4 + métricas CSV
+│   └── gmm_ppo/                  # Pipeline GMM+PPO (isolado, em desenvolvimento)
+├── src/sac_gmm/                  # Biblioteca core (agents, models, envs)
+├── config/                       # Configs do Hydra
+├── calvin_env/                   # Submódulo (simulador CALVIN)
+├── Output_Inference/             # Vídeos gerados + tabela de resultados
 │   ├── videos/                   # eval_*.mp4
-│   └── results_table/            # eval_results.csv + per-run JSON
-└── results_22003/                # Training curves of the SAC-GMM run
+│   └── results_table/            # eval_results.csv + JSON por run
+└── results_22003/                # Curvas de treinamento da run SAC-GMM
 ```
 
-## Reproducibility fixes applied to the upstream
+## Correções de reprodutibilidade aplicadas ao upstream
 
-This repo includes patches on top of [`nematoli/sac_gmm`](https://github.com/nematoli/sac_gmm):
+Este repo inclui patches sobre [`nematoli/sac_gmm`](https://github.com/nematoli/sac_gmm):
 
-1. **Hydra `config_path`** resolved via `Path(__file__)` for paths with spaces.
-2. **`bayesian_gmm.log_table`** made no-op when not using `WandbLogger`.
-3. **`plot_utils`** uses `matplotlib.tab10` so K > 7 components don't crash.
-4. **`calvin_env.play_table_env`** patched for editable installs (`__file__ is None`).
-5. **Missing `sac_gmm.models.sac_model.SAC`** implemented (Lightning module).
-6. **Pure SAC training via SB3** (clean alternative to the broken native one).
+1. **`config_path` do Hydra** resolvido via `Path(__file__)` para caminhos com espaços.
+2. **`bayesian_gmm.log_table`** convertido em no-op quando não se usa `WandbLogger`.
+3. **`plot_utils`** usa `matplotlib.tab10` para que K > 7 componentes não quebre.
+4. **`calvin_env.play_table_env`** corrigido para installs em modo *editable* (`__file__ is None`).
+5. **`sac_gmm.models.sac_model.SAC`** (que faltava) implementado como módulo Lightning.
+6. **Treinamento SAC puro via SB3** (alternativa limpa ao SACAgent nativo, que estava quebrado).
 
-See [`docs/changelog.md`](docs/changelog.md) for the full log.
+Ver [`docs/changelog.md`](docs/changelog.md) para o log completo.
 
-## Upstream attribution
+## Atribuição ao upstream
 
-This work builds on top of the official codebase. The original README is
-preserved at [`README_upstream_sac_gmm.md`](README_upstream_sac_gmm.md).
+Este trabalho se baseia no código-base oficial. O README original está preservado em
+[`README_upstream_sac_gmm.md`](README_upstream_sac_gmm.md).
 
 ```
 @inproceedings{nematollahi22icra,
