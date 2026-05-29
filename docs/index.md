@@ -122,6 +122,11 @@ Setup completo: ver [setup.md](setup.md).
 
 ---
 
+## 🧪 Métodos em desenvolvimento
+
+- **[GMM + PPO](gmm_ppo.md)** — variante do SAC-GMM substituindo o algoritmo
+  de RL por PPO. Em fase de implementação.
+
 ## 📅 Changelog
 
 Ver [changelog.md](changelog.md) para a bitácora completa do projeto.
