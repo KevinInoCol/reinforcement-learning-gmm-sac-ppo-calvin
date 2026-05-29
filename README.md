@@ -18,15 +18,22 @@ skills sobre [CALVIN](https://github.com/mees/calvin), baseado em
 | Método | Tipo | Reproduzido |
 |---|---|---|
 | **GMM only** | LfD offline (Bayesian GMM, K=3) | ✅ |
-| **SAC pure** | Online RL com recompensa esparsa (via [SB3](https://github.com/DLR-RM/stable-baselines3)) | 🟡 em andamento |
 | **SAC-GMM** | Híbrido (GMM + SAC refinando parâmetros da trajetória a cada N steps) | ✅ |
+| **GMM+PPO contínuo** | Híbrido (GMM + PPO **contínuo** refinando Δθ a cada N steps, via [SB3](https://github.com/DLR-RM/stable-baselines3)) | 🧪 em desenvolvimento |
 
 Skill: **`open_drawer`** sobre **CALVIN scene D** (split `task_D_D`).
 
-## 🧪 Métodos em desenvolvimento: GMM + PPO
+> ℹ️ **PPO contínuo, não discreto.** A ação do agente PPO é Δθ ∈ ℝ⁹ (correções
+> reais sobre as médias do GMM, K=3 componentes), logo o `action_space` do
+> wrapper é `gym.spaces.Box(low=-1, high=1, shape=(9,))`. Com `Box`, a
+> `MlpPolicy` da SB3 instancia automaticamente uma política gaussiana → PPO
+> contínuo. Não há nenhuma chamada a `gym.spaces.Discrete` no pipeline.
+
+## 🧪 Métodos em desenvolvimento: GMM + PPO contínuo
 
 > Variante de **SAC-GMM** em que o algoritmo de RL é substituído por
-> **Proximal Policy Optimization** ([Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3))
+> **Proximal Policy Optimization (PPO) contínuo**
+> ([Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3))
 > sobre o mesmo *skill prior* (GMM bayesiano K=3, congelado). Toda a
 > implementação fica isolada em [`scripts/gmm_ppo/`](scripts/gmm_ppo) para
 > **não alterar** o pipeline de GMM puro nem o de SAC-GMM, que já produziram
