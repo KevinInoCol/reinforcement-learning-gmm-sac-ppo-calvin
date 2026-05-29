@@ -45,6 +45,7 @@ from stable_baselines3.common.callbacks import (
     CheckpointCallback,
     BaseCallback,
 )
+from stable_baselines3.common.monitor import Monitor
 
 from sac_gmm.utils.env_maker import make_env
 # IMPORTANTE: import desde la copia LOCAL en scripts/gmm_ppo/, no desde src/sac_gmm/envs/calvin/.
@@ -149,11 +150,18 @@ def main():
     print(f"[gmm_ppo] obs_space={env.observation_space}")
     print(f"[gmm_ppo] action_space={env.action_space}  (Δθ del GMM)")
 
-    # Sanity check
+    # Sanity check ANTES de wrappear con Monitor (env.reset devuelve (obs, info)
+    # en gymnasium; Monitor cambia esa firma).
     obs, _ = env.reset()
     print(f"[gmm_ppo] obs.shape={obs.shape}, ejemplo={obs}")
 
+    # Wrap con Monitor — necesario para que SB3 reporte ep_rew_mean / ep_len_mean
+    # correctamente y para que EvalCallback no tire UserWarning.
+    env = Monitor(env)
+
     # === PPO de SB3 ===
+    # device='cpu': para MlpPolicy (no CNN), SB3 recomienda CPU — la
+    # transferencia GPU↔CPU del rollout buffer es más cara que el forward MLP.
     model = PPO(
         policy="MlpPolicy",
         env=env,
@@ -166,6 +174,7 @@ def main():
         clip_range=args.clip_range,
         ent_coef=0.0,  # PPO típicamente sin entropy bonus
         verbose=1,
+        device="cpu",
         tensorboard_log=str(out_dir / "tb"),
     )
 
