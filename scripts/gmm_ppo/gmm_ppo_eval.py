@@ -37,6 +37,7 @@ sys.path.insert(0, cwd_path.as_posix())  # local copy del wrapper en scripts/gmm
 import numpy as np
 import hydra
 from hydra import compose, initialize_config_dir
+from pytorch_lightning import seed_everything
 
 from stable_baselines3 import PPO
 from sac_gmm.utils.env_maker import make_env
@@ -65,14 +66,24 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--skill", default="calvin_open_drawer")
     parser.add_argument("--env", default="calvin_scene_D")
-    parser.add_argument("--num_episodes", type=int, default=5)
+    parser.add_argument("--num_episodes", type=int, default=5,
+                        help="Episodios por seed.")
+    parser.add_argument("--num_seeds", type=int, default=1,
+                        help="Número de seeds (grupos independientes de num_episodes) "
+                             "para reportar media ± varianza, igual que agent_eval_record.py.")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Seed base; cada grupo s usa seed+s (default 42, "
+                             "mismo que GMM/GMM+SAC → mismas posiciones iniciales).")
     parser.add_argument("--n_inner_steps", type=int, default=32)
     parser.add_argument("--max_outer_steps", type=int, default=2)
     parser.add_argument("--mu_change_range", type=float, default=0.03)
     parser.add_argument("--show_gui", action="store_true")
     parser.add_argument("--record_video", action="store_true")
     parser.add_argument("--use_egl", action="store_true")
-    parser.add_argument("--step_delay", type=float, default=0.0)
+    parser.add_argument("--step_delay", type=float,
+                        default=float(os.environ.get("SACGMM_STEP_DELAY", "0.0")),
+                        help="Pausa entre steps en segundos. También se puede setear con "
+                             "la env var SACGMM_STEP_DELAY=0.05 (el flag tiene prioridad).")
     parser.add_argument("--output_dir", default=None)
     args = parser.parse_args()
 
@@ -144,27 +155,41 @@ def main():
             print(f"⚠️  No se pudo iniciar grabación: {e}")
             log_id = None
 
-    # === Eval loop ===
-    successes, returns, lengths = 0, [], []
-    for ep in range(args.num_episodes):
-        obs, _ = env.reset()
-        ep_return, outer_steps, done = 0.0, 0, False
-        while not done:
-            action, _ = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            ep_return += reward
-            outer_steps += 1
-            if args.step_delay > 0:
-                time.sleep(args.step_delay)
-            done = terminated or truncated
-        success = bool(info.get("success", False)) if info else False
-        if success:
-            successes += 1
-        returns.append(ep_return)
-        # Outer steps × n_inner_steps = total sim steps
-        lengths.append(outer_steps * args.n_inner_steps)
-        print(f"Episode {ep+1}/{args.num_episodes}: return={ep_return:.2f}, "
-              f"outer_steps={outer_steps}, success={success}")
+    # === Eval loop (bucle externo de seeds, igual que agent_eval_record.py) ===
+    per_seed_acc, per_seed_return, per_seed_length = [], [], []
+    total_successes, total_episodes = 0, 0
+    for s in range(args.num_seeds):
+        # seed+s controla el ruido gaussiano de la posición inicial del brazo
+        # (env.reset → sample_base_shift → np.random.normal), reproducible por seed.
+        seed_everything(args.seed + s, workers=True)
+        successes, seed_returns, seed_lengths = 0, [], []
+        for ep in range(args.num_episodes):
+            obs, _ = env.reset()
+            ep_return, outer_steps, done = 0.0, 0, False
+            while not done:
+                action, _ = model.predict(obs, deterministic=True)
+                obs, reward, terminated, truncated, info = env.step(action)
+                ep_return += reward
+                outer_steps += 1
+                if args.step_delay > 0:
+                    time.sleep(args.step_delay)
+                done = terminated or truncated
+            success = bool(info.get("success", False)) if info else False
+            if success:
+                successes += 1
+            seed_returns.append(ep_return)
+            # Outer steps × n_inner_steps = total sim steps
+            seed_lengths.append(outer_steps * args.n_inner_steps)
+            print(f"[seed {s+1}/{args.num_seeds}] Episode {ep+1}/{args.num_episodes}: "
+                  f"return={ep_return:.2f}, outer_steps={outer_steps}, success={success}")
+        seed_acc = successes / args.num_episodes
+        per_seed_acc.append(seed_acc)
+        per_seed_return.append(float(np.mean(seed_returns)))
+        per_seed_length.append(float(np.mean(seed_lengths)))
+        total_successes += successes
+        total_episodes += args.num_episodes
+        print(f"[seed {s+1}/{args.num_seeds}] accuracy={seed_acc:.3f} "
+              f"({successes}/{args.num_episodes})")
 
     if log_id is not None and pb_client is not None:
         try:
@@ -176,12 +201,14 @@ def main():
         except Exception as e:
             print(f"⚠️  Error al detener grabación: {e}")
 
-    accuracy = successes / args.num_episodes
-    mean_return = float(np.mean(returns))
-    mean_length = float(np.mean(lengths))
+    accuracy_mean = float(np.mean(per_seed_acc))
+    accuracy_var = float(np.var(per_seed_acc))
+    mean_return = float(np.mean(per_seed_return))
+    mean_length = float(np.mean(per_seed_length))
 
     print(f"\n=== Resumen GMM+PPO ===")
-    print(f"Accuracy:  {accuracy:.2f} ({successes}/{args.num_episodes})")
+    print(f"Accuracy:  mean={accuracy_mean:.4f}, var={accuracy_var:.4f}, per_seed={per_seed_acc}")
+    print(f"Aciertos:  {total_successes}/{total_episodes}")
     print(f"Return:    {mean_return:.2f}")
     print(f"Length:    {mean_length:.2f} sim steps")
 
@@ -193,19 +220,19 @@ def main():
         "skill": args.skill,
         "env": args.env,
         "num_eval_episodes": args.num_episodes,
-        "num_eval_seeds": 1,
+        "num_eval_seeds": args.num_seeds,
         "n_components_gmm": env.K,
         "n_inner_steps": args.n_inner_steps,
         "max_outer_steps": args.max_outer_steps,
         "mu_change_range": args.mu_change_range,
         "model_path": str(model_path),
         "video_path": str(final_video_path) if log_id is not None else None,
-        "accuracy_per_seed": [accuracy],
-        "accuracy_mean": accuracy,
-        "accuracy_var": 0.0,
-        "return_per_seed": returns,
+        "accuracy_per_seed": per_seed_acc,
+        "accuracy_mean": accuracy_mean,
+        "accuracy_var": accuracy_var,
+        "return_per_seed": per_seed_return,
         "return_mean": mean_return,
-        "length_per_seed": lengths,
+        "length_per_seed": per_seed_length,
         "length_mean": mean_length,
     }
     with open(json_path, "w") as f:
@@ -224,8 +251,8 @@ def main():
         if write_header:
             writer.writerow(headers)
         writer.writerow([
-            timestamp, agent_name, args.skill, args.num_episodes, 1,
-            env.K, accuracy, 0.0, json.dumps([accuracy]),
+            timestamp, agent_name, args.skill, args.num_episodes, args.num_seeds,
+            env.K, accuracy_mean, accuracy_var, json.dumps(per_seed_acc),
             mean_return, mean_length, str(model_path),
             str(final_video_path) if log_id is not None else "",
         ])
