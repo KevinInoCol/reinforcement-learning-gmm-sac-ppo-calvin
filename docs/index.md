@@ -13,22 +13,66 @@ title: SAC-GMM em CALVIN — Estudo de Reprodutibilidade
 
 ---
 
-## 📊 Resultados atuais (28/05/2026)
+## 📊 Resultados atuais (01/06/2026)
 
-Skill avaliada: **`open_drawer`** em CALVIN scene D. 5 episódios de avaliação por seed.
+Skill avaliada: **`open_drawer`** em CALVIN scene D. Avaliação com **20 episódios × 3 seeds (42–44) = 60 episódios** por método, com as mesmas posições iniciais para uma comparação justa.
 
-| Método | Accuracy | Return médio | Tamanho médio do episódio | Status |
+### Resumen — GMM only
+
+| Seed | Aciertos | Fallos | Accuracy |
+|---|---|---|---|
+| 1 (42) | 3 / 20 | 17 | 15% |
+| 2 (43) | 5 / 20 | 15 | 25% |
+| 3 (44) | 6 / 20 | 14 | 30% |
+| **Total** | **14 / 60** | **46 / 60** | — |
+
+- ✅ Aciertos: **14 / 60** · ❌ Fallos: 46 / 60
+- 📊 Media accuracy: **23.3%** · 📈 Varianza: 0.0039 (≈ ±6.2%)
+- Return medio: 2.33 · Length medio: 62.1 sim steps · GMM K=3
+
+### Resumen — GMM+PPO
+
+| Seed | Aciertos | Fallos | Accuracy |
+|---|---|---|---|
+| 1 (42) | 4 / 20 | 16 | 20% |
+| 2 (43) | 8 / 20 | 12 | 40% |
+| 3 (44) | 9 / 20 | 11 | 45% |
+| **Total** | **21 / 60** | **39 / 60** | — |
+
+- ✅ Aciertos: **21 / 60** · ❌ Fallos: 39 / 60
+- 📊 Media accuracy: **35.0%** · 📈 Varianza: 0.0117 (≈ ±10.8%)
+- Return medio: 3.5 · Length medio: 63.5 sim steps · GMM K=3
+- Modelo: `gmm_ppo_open_drawer_best.zip` (51K/200K steps — entrenamiento incompleto)
+
+### Resumen — GMM+SAC
+
+| Seed | Aciertos | Fallos | Accuracy |
+|---|---|---|---|
+| 1 (42) | 13 / 20 | 7 | 65% |
+| 2 (43) | 15 / 20 | 5 | 75% |
+| 3 (44) | 15 / 20 | 5 | 75% |
+| **Total** | **43 / 60** | **17 / 60** | — |
+
+- ✅ Aciertos: **43 / 60** · ❌ Fallos: 17 / 60
+- 📊 Media accuracy: **71.7%** · 📈 Varianza: 0.0022 (≈ ±4.7%)
+- Return medio: 7.17 · Length medio: 55.7 sim steps · GMM K=3
+- Modelo: `sac_gmm_open_drawer_best.ckpt`
+
+### 🏆 Tabla final — comparación de los tres métodos
+
+| Método | Aciertos | Media accuracy | ±std | Length |
 |---|---|---|---|---|
-| **GMM only** (K=3, 152 demos) | **20%** (1/5) | 2.0 | 60.4 passos | ✅ Medido (Mac local) |
-| **SAC puro** (SB3, state-based obs) | **~100%** 🎉 | 10.0 | n/d | 🟡 Em treinamento (job 69068) |
-| **SAC-GMM** (K=3, N=32) | **80%** (4/5) | 8.0 | 57.2 passos | ✅ Medido (cluster, job 68510) |
+| **GMM only** | 14 / 60 | 23.3% | ±6.2% | 62.1 |
+| **GMM+PPO** | 21 / 60 | 35.0% | ±10.8% | 63.5 |
+| **GMM+SAC** | 43 / 60 | **71.7%** | ±4.7% | 55.7 |
 
-> ⚠️ **Nota importante sobre SAC puro:** O paper original reporta SAC = 0% em
-> sparse reward (Tabela I). Nosso experimento usa observação `state-based`
-> (posição 3D), enquanto o paper usa observação visual processada por
-> autoencoder. SAC com pose é significativamente mais fácil. **Os resultados
-> não são diretamente comparáveis 1:1 com o paper**, mas validam que o
-> bottleneck do baseline original era o processamento visual e não o RL em si.
+**Lectura para la expo:**
+
+- **Orden de desempeño:** GMM+SAC (71.7%) ≫ GMM+PPO (35.0%) > GMM only (23.3%).
+- **GMM+PPO sí mejora sobre el GMM base** (+11.7 puntos): el refinamiento con PPO aporta, aunque modestamente.
+- **GMM+PPO queda muy por debajo de GMM+SAC.** Esto es esperado y explicable: el PPO solo entrenó 51K de 200K steps (se cortó por el límite de 8h, a ~1 fps). Está a ~25% de su entrenamiento previsto.
+- **GMM+PPO es el más inestable** (±10.8%, la varianza más alta): seeds entre 20% y 45%. Coherente con un modelo a medio entrenar — aún no convergió.
+- **GMM+SAC es el más consistente** (±4.7%) y además el más rápido abriendo (55.7 vs ~63 steps).
 
 ---
 
