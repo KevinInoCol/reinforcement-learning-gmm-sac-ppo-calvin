@@ -122,17 +122,20 @@ def main():
     print(f"[sac_train_sb3] out_dir = {out_dir}")
 
     # Compose configs via Hydra (lo justo para crear el env)
+    import platform
+    is_mac = platform.system() == "Darwin"
+
     config_dir = str(sac_gmm_path / "config")
     with initialize_config_dir(version_base="1.1", config_dir=config_dir):
-        cfg = compose(
-            config_name="sac_train",
-            overrides=[
-                f"skill={args.skill}",
-                f"env={args.env}",
-                "agent=sac_calvin",  # solo para que el datamodule resuelva
-                "obs_space=[pos]",   # forzamos solo position
-            ],
-        )
+        overrides = [
+            f"skill={args.skill}",
+            f"env={args.env}",
+            "agent=sac_calvin",  # solo para que el datamodule resuelva
+            "obs_space=[pos]",   # forzamos solo position
+        ]
+        if is_mac:
+            overrides.append("env.calvin_env.env.use_egl=false")
+        cfg = compose(config_name="sac_train", overrides=overrides)
 
     # Datamodule para start_position
     datamodule = hydra.utils.instantiate(cfg.datamodule)
