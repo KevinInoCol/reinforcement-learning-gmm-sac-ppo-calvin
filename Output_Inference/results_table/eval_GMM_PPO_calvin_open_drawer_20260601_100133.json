@@ -1,0 +1,33 @@
+{
+  "timestamp": "20260601_100133",
+  "agent": "GMM_PPO",
+  "skill": "calvin_open_drawer",
+  "env": "calvin_scene_D",
+  "num_eval_episodes": 20,
+  "num_eval_seeds": 3,
+  "n_components_gmm": 3,
+  "n_inner_steps": 32,
+  "max_outer_steps": 2,
+  "mu_change_range": 0.03,
+  "model_path": "checkpoints/gmm_ppo_open_drawer_best.zip",
+  "video_path": "Output_Inference/videos/eval_GMM_PPO_calvin_open_drawer_20260601_100133.mp4",
+  "accuracy_per_seed": [
+    0.2,
+    0.4,
+    0.45
+  ],
+  "accuracy_mean": 0.35000000000000003,
+  "accuracy_var": 0.011666666666666667,
+  "return_per_seed": [
+    2.0,
+    4.0,
+    4.5
+  ],
+  "return_mean": 3.5,
+  "length_per_seed": [
+    62.4,
+    64.0,
+    64.0
+  ],
+  "length_mean": 63.46666666666667
+}
