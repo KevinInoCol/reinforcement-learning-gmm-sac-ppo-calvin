@@ -89,6 +89,8 @@ def main():
     parser.add_argument("--mu_change_range", type=float, default=0.03)
     parser.add_argument("--eval_freq", type=int, default=1000)
     parser.add_argument("--n_eval_episodes", type=int, default=10)
+    parser.add_argument("--save_freq", type=int, default=5000,
+                        help="Frecuencia (en steps) para guardar checkpoints intermedios.")
     # PPO hyperparams
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--n_steps", type=int, default=128,
@@ -189,7 +191,7 @@ def main():
         render=False,
     )
     ckpt_callback = CheckpointCallback(
-        save_freq=5000,
+        save_freq=args.save_freq,
         save_path=str(out_dir / "checkpoints"),
         name_prefix="gmm_ppo",
     )
