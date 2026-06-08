@@ -109,6 +109,14 @@ def main():
     parser.add_argument("--max_seconds", type=float, default=None,
                         help="Wall-clock time limit (segundos). Si se alcanza antes "
                              "de total_timesteps, el training se detiene y guarda.")
+    # === Weights & Biases (opcional) ===
+    # En RECOD los nodos de cómputo NO tienen internet => se usa modo offline y
+    # luego `wandb sync <dir>` desde el headnode (con internet) para subirlo.
+    parser.add_argument("--wandb", action="store_true",
+                        help="Activa logging a W&B (offline por defecto).")
+    parser.add_argument("--wandb_project", type=str, default="gmm-ppo")
+    parser.add_argument("--wandb_name", type=str, default=None,
+                        help="Nombre del run; por defecto se autogenera.")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else (
@@ -212,6 +220,30 @@ def main():
         print(f"[gmm_ppo] Time limit: {args.max_seconds:.0f}s "
               f"(~{args.max_seconds/3600:.2f}h)")
 
+    # === W&B (opcional) ===
+    # sync_tensorboard=True mirrorea automáticamente las métricas que SB3 ya
+    # escribe en TensorBoard. En RECOD se corre con WANDB_MODE=offline (nodos
+    # sin internet) y luego `wandb sync <out_dir>/wandb/offline-run-*` en headnode.
+    # Envuelto en try/except: si W&B falla, el entrenamiento NO se cae.
+    wandb_run = None
+    if args.wandb:
+        try:
+            import wandb
+            wandb_run = wandb.init(
+                project=args.wandb_project,
+                name=args.wandb_name,
+                dir=str(out_dir),
+                sync_tensorboard=True,
+                config=vars(args),
+                save_code=False,
+            )
+            print(f"[gmm_ppo] W&B activo: project={args.wandb_project} "
+                  f"mode={os.environ.get('WANDB_MODE', 'online')} "
+                  f"dir={out_dir}/wandb")
+        except Exception as e:
+            print(f"[gmm_ppo] WARN: no se pudo iniciar W&B ({e}); sigo sin W&B.")
+            wandb_run = None
+
     start_t = time.time()
     print(f"[gmm_ppo] Iniciando training: total_timesteps={args.total_timesteps}")
     model.learn(
@@ -226,6 +258,14 @@ def main():
     final_path = out_dir / "gmm_ppo_final.zip"
     model.save(str(final_path))
     print(f"[gmm_ppo] Modelo final guardado en {final_path}")
+
+    if wandb_run is not None:
+        try:
+            wandb_run.finish()
+            print(f"[gmm_ppo] W&B run cerrado. Para subirlo desde headnode:\n"
+                  f"   wandb sync {out_dir}/wandb/offline-run-*")
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

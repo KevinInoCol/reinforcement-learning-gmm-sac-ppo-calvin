@@ -11,6 +11,9 @@
 source ~/miniconda/etc/profile.d/conda.sh
 conda activate UNICAMP-Project-RL-SAC-GMM
 
+# W&B offline (nodo sin internet). Sync luego desde headnode con `wandb sync`.
+export WANDB_MODE=offline
+
 cd ~/Project-Reinforment-Learning
 
 # ============================================================================
@@ -37,4 +40,7 @@ python scripts/gmm_ppo/gmm_ppo_train_sb3.py \
     --eval_freq 500 \
     --n_eval_episodes 5 \
     --save_freq 100000 \
-    --max_seconds 900
+    --max_seconds 900 \
+    --wandb \
+    --wandb_project gmm-ppo \
+    --wandb_name gmm_ppo_smoke_${SLURM_JOB_ID}

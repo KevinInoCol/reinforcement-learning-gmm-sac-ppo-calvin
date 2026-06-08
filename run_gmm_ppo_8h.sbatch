@@ -11,6 +11,10 @@
 source ~/miniconda/etc/profile.d/conda.sh
 conda activate UNICAMP-Project-RL-SAC-GMM
 
+# W&B en modo OFFLINE: el nodo de cómputo no tiene internet. Tras el run,
+# subir desde el headnode con:  wandb sync logs/gmm_ppo_8h/calvin_open_drawer/wandb/offline-run-*
+export WANDB_MODE=offline
+
 cd ~/Project-Reinforment-Learning
 
 # ============================================================================
@@ -45,4 +49,7 @@ python scripts/gmm_ppo/gmm_ppo_train_sb3.py \
     --eval_freq 2000 \
     --n_eval_episodes 20 \
     --save_freq 20000 \
-    --max_seconds 28800
+    --max_seconds 28800 \
+    --wandb \
+    --wandb_project gmm-ppo \
+    --wandb_name gmm_ppo_8h_${SLURM_JOB_ID}
