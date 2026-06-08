@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=gmm_ppo_8h
-#SBATCH --partition=a5000
+#SBATCH --partition=l40s
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
