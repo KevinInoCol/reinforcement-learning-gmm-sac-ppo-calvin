@@ -74,8 +74,9 @@ def main():
     parser.add_argument("--seed", type=int, default=42,
                         help="Seed base; cada grupo s usa seed+s (default 42, "
                              "mismo que GMM/GMM+SAC → mismas posiciones iniciales).")
-    parser.add_argument("--n_inner_steps", type=int, default=32)
-    parser.add_argument("--max_outer_steps", type=int, default=2)
+    # Consistentes con el entrenamiento corregido (igualados a SAC: 4 adapt/episodio).
+    parser.add_argument("--n_inner_steps", type=int, default=16)
+    parser.add_argument("--max_outer_steps", type=int, default=4)
     parser.add_argument("--mu_change_range", type=float, default=0.03)
     parser.add_argument("--show_gui", action="store_true")
     parser.add_argument("--record_video", action="store_true")

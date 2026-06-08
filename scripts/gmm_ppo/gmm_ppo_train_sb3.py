@@ -84,21 +84,28 @@ def main():
     parser.add_argument("--out_dir", type=str, default=None)
     parser.add_argument("--skill", type=str, default="calvin_open_drawer")
     parser.add_argument("--env", type=str, default="calvin_scene_D")
-    parser.add_argument("--n_inner_steps", type=int, default=32)
-    parser.add_argument("--max_outer_steps", type=int, default=2)
+    # Igualados a SAC-GMM: adapt_per_episode=4 => gmm_window=16 (n_inner_steps),
+    # 4 decisiones por episodio (max_outer_steps). max_steps episodio = 4*16 = 64.
+    parser.add_argument("--n_inner_steps", type=int, default=16)
+    parser.add_argument("--max_outer_steps", type=int, default=4)
     parser.add_argument("--mu_change_range", type=float, default=0.03)
-    parser.add_argument("--eval_freq", type=int, default=1000)
-    parser.add_argument("--n_eval_episodes", type=int, default=10)
+    # Eval más fino para una curva creíble (vs 5 ep/10 puntos del baseline).
+    parser.add_argument("--eval_freq", type=int, default=2000)
+    parser.add_argument("--n_eval_episodes", type=int, default=20)
     parser.add_argument("--save_freq", type=int, default=5000,
                         help="Frecuencia (en steps) para guardar checkpoints intermedios.")
     # PPO hyperparams
     parser.add_argument("--learning_rate", type=float, default=3e-4)
-    parser.add_argument("--n_steps", type=int, default=128,
+    parser.add_argument("--n_steps", type=int, default=2048,
                         help="Rollout length antes de cada update PPO")
     parser.add_argument("--n_epochs", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
     parser.add_argument("--clip_range", type=float, default=0.2)
+    # CLAVE para recompensa dispersa: entropy bonus > 0 para que PPO explore
+    # (análogo a la maximización de entropía de SAC). El baseline usaba 0.0
+    # y por eso la política se estancaba sin explorar.
+    parser.add_argument("--ent_coef", type=float, default=0.01)
     parser.add_argument("--max_seconds", type=float, default=None,
                         help="Wall-clock time limit (segundos). Si se alcanza antes "
                              "de total_timesteps, el training se detiene y guarda.")
@@ -174,11 +181,13 @@ def main():
         gamma=args.gamma,
         gae_lambda=args.gae_lambda,
         clip_range=args.clip_range,
-        ent_coef=0.0,  # PPO típicamente sin entropy bonus
+        ent_coef=args.ent_coef,  # >0 => exploración (crítico en reward dispersa)
         verbose=1,
         device="cpu",
         tensorboard_log=str(out_dir / "tb"),
     )
+    print(f"[gmm_ppo] ent_coef={args.ent_coef}  n_steps={args.n_steps}  "
+          f"n_inner={args.n_inner_steps}  max_outer={args.max_outer_steps}")
 
     # === Callbacks ===
     eval_callback = EvalCallback(

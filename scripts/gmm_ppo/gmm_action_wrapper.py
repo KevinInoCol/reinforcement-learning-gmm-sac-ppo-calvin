@@ -116,15 +116,19 @@ class GMMActionWrapper(gym.Env):
             low=-1.0, high=1.0, shape=(action_dim,), dtype=np.float32
         )
 
-        # Observation space: position 3D (igual que SAC SB3 puro)
+        # Observation space: posición GOAL-RELATIVE (pos - target), 3D.
+        # Más informativa que la posición absoluta y consistente con la entrada
+        # del GMM (que usa pos - target). Acotada => PPO aprende mejor.
+        # Rango holgado para evitar warnings de bounds en estados transitorios.
         self.observation_space = gym.spaces.Box(
-            low=-1.0, high=1.0, shape=(3,), dtype=np.float32
+            low=-5.0, high=5.0, shape=(3,), dtype=np.float32
         )
 
         # Estado interno del wrapper
         self._outer_step_count = 0
         self._gmm_active = None  # copia mutable del GMM base
         self._obs_dict = None
+        self._target = None      # target actual (para obs goal-relative)
 
     def detect_target(self) -> np.ndarray:
         """Posición target para el GMM, replicando GMMAgent.detect_target.
@@ -150,6 +154,17 @@ class GMMActionWrapper(gym.Env):
             pos = obs_dict.get("position", np.zeros(3))
             return np.asarray(pos, dtype=np.float32)
         return np.asarray(obs_dict, dtype=np.float32)
+
+    def _obs_goal_relative(self, obs_dict) -> np.ndarray:
+        """Observación que ve el agente: pos - target (frame goal-relative).
+
+        Es el mismo frame que usa el GMM internamente, y al estar acotado/centrado
+        ayuda mucho a PPO (que es sensible a la escala de la observación).
+        """
+        pos = self._extract_obs(obs_dict)
+        if self._target is None:
+            return pos
+        return np.asarray(pos - self._target, dtype=np.float32)
 
     def _decode_action(self, action: np.ndarray):
         """Convierte la acción en [-1,1]^action_dim a Δπ, Δμ, ΔΣ."""
@@ -226,7 +241,9 @@ class GMMActionWrapper(gym.Env):
         # 3) Muestrear pos inicial (sin ruido si env_is_source, con ruido si no).
         self.kp_mock.reset_position()
 
-        return self._extract_obs(self._obs_dict), {}
+        # Target inicial para la observación goal-relative.
+        self._target = self.detect_target()
+        return self._obs_goal_relative(self._obs_dict), {}
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, dict]:
         # 1) Decodificar Δθ desde la acción del agente
@@ -242,6 +259,7 @@ class GMMActionWrapper(gym.Env):
         # Target dinámico: keypoint actual del objeto + shift (replica CALVINAgent
         # canónico: se recomputa una vez por outer step, no por inner step).
         target_pos = self.detect_target()
+        self._target = target_pos  # para la obs goal-relative devuelta al agente
 
         for inner in range(self.n_inner_steps):
             pos = self._extract_obs(self._obs_dict)
@@ -265,7 +283,7 @@ class GMMActionWrapper(gym.Env):
         self._outer_step_count += 1
         truncated = (self._outer_step_count >= self.max_outer_steps) and not terminated
 
-        obs_out = self._extract_obs(self._obs_dict)
+        obs_out = self._obs_goal_relative(self._obs_dict)
         return obs_out, accumulated_reward, terminated, truncated, last_info
 
     def render(self):
