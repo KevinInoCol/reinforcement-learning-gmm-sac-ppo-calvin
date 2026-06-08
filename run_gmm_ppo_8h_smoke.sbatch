@@ -14,8 +14,8 @@ conda activate UNICAMP-Project-RL-SAC-GMM
 cd ~/Project-Reinforment-Learning
 
 # ============================================================================
-# SMOKE TEST (~10 min) del GMM+PPO corregido. MISMA config que run_gmm_ppo_8h
-# pero parado a los 600s, para validar en RECOD que entrena sin errores ANTES
+# SMOKE TEST (~15 min) del GMM+PPO corregido. MISMA config que run_gmm_ppo_8h
+# pero parado a los 900s, para validar en RECOD que entrena sin errores ANTES
 # de lanzar el run completo de 8h. Corre en RECOD (la Mac no ejecuta nada).
 # eval_freq y n_eval_episodes reducidos para ver al menos un par de evals.
 # ============================================================================
@@ -37,4 +37,4 @@ python scripts/gmm_ppo/gmm_ppo_train_sb3.py \
     --eval_freq 500 \
     --n_eval_episodes 5 \
     --save_freq 100000 \
-    --max_seconds 600
+    --max_seconds 900
