@@ -117,6 +117,9 @@ def main():
     parser.add_argument("--wandb_project", type=str, default="gmm-ppo")
     parser.add_argument("--wandb_name", type=str, default=None,
                         help="Nombre del run; por defecto se autogenera.")
+    # Prefijo común de TODO este proyecto en W&B: agrupa y distingue estos runs
+    # de los de otros proyectos en tu cuenta (rl_baseline, vqvae_baseline, ...).
+    parser.add_argument("--wandb_group", type=str, default="Project-Manipulador-RL")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else (
@@ -229,17 +232,24 @@ def main():
     if args.wandb:
         try:
             import wandb
+            # Prefijo común del proyecto: TODOS los runs empiezan con
+            # "Project-Manipulador-RL" para distinguirlos en tu cuenta W&B.
+            prefix = args.wandb_group
+            base = args.wandb_name or f"gmm_ppo_{args.skill}"
+            run_name = base if base.startswith(prefix) else f"{prefix}__{base}"
             # No fijamos dir= aquí: respetamos WANDB_DIR del entorno ($HOME/wandb
             # en RECOD), para que todos los runs offline queden en un solo lugar
             # y se suban con un único `wandb sync ~/wandb/wandb/offline-run-*`.
             wandb_run = wandb.init(
                 project=args.wandb_project,
-                name=args.wandb_name,
+                name=run_name,
+                group=args.wandb_group,
                 sync_tensorboard=True,
                 config=vars(args),
                 save_code=False,
             )
             print(f"[gmm_ppo] W&B activo: project={args.wandb_project} "
+                  f"run={run_name} group={args.wandb_group} "
                   f"mode={os.environ.get('WANDB_MODE', 'online')} "
                   f"WANDB_DIR={os.environ.get('WANDB_DIR', '(default ./wandb)')}")
         except Exception as e:
