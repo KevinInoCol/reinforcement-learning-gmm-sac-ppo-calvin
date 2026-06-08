@@ -45,5 +45,5 @@ python scripts/gmm_ppo/gmm_ppo_train_sb3.py \
     --save_freq 100000 \
     --max_seconds 900 \
     --wandb \
-    --wandb_project gmm-ppo \
+    --wandb_project Project-Manipulador-RL-gmm-ppo \
     --wandb_name gmm_ppo_smoke_${SLURM_JOB_ID}
