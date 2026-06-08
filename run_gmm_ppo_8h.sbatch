@@ -11,9 +11,13 @@
 source ~/miniconda/etc/profile.d/conda.sh
 conda activate UNICAMP-Project-RL-SAC-GMM
 
-# W&B en modo OFFLINE: el nodo de cómputo no tiene internet. Tras el run,
-# subir desde el headnode con:  wandb sync logs/gmm_ppo_8h/calvin_open_drawer/wandb/offline-run-*
+# W&B en modo OFFLINE: el nodo de cómputo no tiene internet. WANDB_DIR en $HOME
+# (persistente, NO scratch). Tras/durante el run, subir desde el headnode con:
+#   wandb sync ~/wandb/wandb/offline-run-*
+# (o un loop tmux cada 120s para verlo casi en vivo).
 export WANDB_MODE=offline
+export WANDB_DIR=$HOME/wandb
+mkdir -p $WANDB_DIR
 
 cd ~/Project-Reinforment-Learning
 

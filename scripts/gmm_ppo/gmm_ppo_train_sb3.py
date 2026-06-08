@@ -229,17 +229,19 @@ def main():
     if args.wandb:
         try:
             import wandb
+            # No fijamos dir= aquí: respetamos WANDB_DIR del entorno ($HOME/wandb
+            # en RECOD), para que todos los runs offline queden en un solo lugar
+            # y se suban con un único `wandb sync ~/wandb/wandb/offline-run-*`.
             wandb_run = wandb.init(
                 project=args.wandb_project,
                 name=args.wandb_name,
-                dir=str(out_dir),
                 sync_tensorboard=True,
                 config=vars(args),
                 save_code=False,
             )
             print(f"[gmm_ppo] W&B activo: project={args.wandb_project} "
                   f"mode={os.environ.get('WANDB_MODE', 'online')} "
-                  f"dir={out_dir}/wandb")
+                  f"WANDB_DIR={os.environ.get('WANDB_DIR', '(default ./wandb)')}")
         except Exception as e:
             print(f"[gmm_ppo] WARN: no se pudo iniciar W&B ({e}); sigo sin W&B.")
             wandb_run = None
@@ -262,8 +264,9 @@ def main():
     if wandb_run is not None:
         try:
             wandb_run.finish()
+            wdir = os.environ.get("WANDB_DIR", "./wandb")
             print(f"[gmm_ppo] W&B run cerrado. Para subirlo desde headnode:\n"
-                  f"   wandb sync {out_dir}/wandb/offline-run-*")
+                  f"   wandb sync {wdir}/wandb/offline-run-*")
         except Exception:
             pass
 

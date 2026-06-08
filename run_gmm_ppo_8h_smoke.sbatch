@@ -11,8 +11,11 @@
 source ~/miniconda/etc/profile.d/conda.sh
 conda activate UNICAMP-Project-RL-SAC-GMM
 
-# W&B offline (nodo sin internet). Sync luego desde headnode con `wandb sync`.
+# W&B offline (nodo sin internet). WANDB_DIR en $HOME (persistente, no scratch).
+# Sync luego desde headnode con: wandb sync ~/wandb/wandb/offline-run-*
 export WANDB_MODE=offline
+export WANDB_DIR=$HOME/wandb
+mkdir -p $WANDB_DIR
 
 cd ~/Project-Reinforment-Learning
 
