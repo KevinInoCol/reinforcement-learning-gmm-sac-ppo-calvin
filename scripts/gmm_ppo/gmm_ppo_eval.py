@@ -158,14 +158,18 @@ def main():
 
     # === Eval loop (bucle externo de seeds, igual que agent_eval_record.py) ===
     per_seed_acc, per_seed_return, per_seed_length = [], [], []
+    start_positions_per_seed = []
     total_successes, total_episodes = 0, 0
     for s in range(args.num_seeds):
         # seed+s controla el ruido gaussiano de la posición inicial del brazo
         # (env.reset → sample_base_shift → np.random.normal), reproducible por seed.
         seed_everything(args.seed + s, workers=True)
         successes, seed_returns, seed_lengths = 0, [], []
+        seed_starts = []
         for ep in range(args.num_episodes):
             obs, _ = env.reset()
+            # Log de variabilidad: posición inicial del EE de este episodio
+            seed_starts.append(getattr(raw_env, "last_start_ee_pos", None))
             ep_return, outer_steps, done = 0.0, 0, False
             while not done:
                 action, _ = model.predict(obs, deterministic=True)
@@ -187,6 +191,7 @@ def main():
         per_seed_acc.append(seed_acc)
         per_seed_return.append(float(np.mean(seed_returns)))
         per_seed_length.append(float(np.mean(seed_lengths)))
+        start_positions_per_seed.append(seed_starts)
         total_successes += successes
         total_episodes += args.num_episodes
         print(f"[seed {s+1}/{args.num_seeds}] accuracy={seed_acc:.3f} "
@@ -235,6 +240,9 @@ def main():
         "return_mean": mean_return,
         "length_per_seed": per_seed_length,
         "length_mean": mean_length,
+        # Variabilidad del inicio (Maria): ruido (x,y) y posición EE inicial por episodio
+        "ee_noise": np.asarray(raw_env.ee_noise, dtype=float).tolist(),
+        "start_positions_per_seed": start_positions_per_seed,
     }
     with open(json_path, "w") as f:
         json.dump(payload, f, indent=2, default=float)

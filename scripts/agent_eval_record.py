@@ -254,6 +254,7 @@ def run_test(cfg: DictConfig) -> None:
     pb_client, log_id, tmp_path = _start_video(agent, video_path)
 
     accs, returns, lengths = [], [], []
+    start_positions_per_seed = []
     try:
         for s in range(cfg.num_eval_seeds):
             seed_everything(cfg.seed + s, workers=True)
@@ -261,6 +262,8 @@ def run_test(cfg: DictConfig) -> None:
             accs.append(float(eval_accuracy))
             returns.append(float(eval_return) if eval_return is not None else None)
             lengths.append(float(eval_length) if eval_length is not None else None)
+            # Log de variabilidad: posición inicial del EE por episodio en este seed
+            start_positions_per_seed.append(getattr(agent, "eval_start_positions", None))
     finally:
         # Asegura cerrar la grabación incluso si hay excepción
         _stop_video(pb_client, log_id, tmp_path, video_path)
@@ -277,6 +280,9 @@ def run_test(cfg: DictConfig) -> None:
         "return_mean": float(np.mean([r for r in returns if r is not None])) if any(r is not None for r in returns) else None,
         "length_per_seed": lengths,
         "length_mean": float(np.mean([l for l in lengths if l is not None])) if any(l is not None for l in lengths) else None,
+        # Variabilidad del inicio (Maria): ruido (x,y) y posición EE inicial por episodio
+        "ee_noise": np.asarray(agent.env.ee_noise, dtype=float).tolist(),
+        "start_positions_per_seed": start_positions_per_seed,
     }
 
     log_rank_0(f"=== Resumen de evaluación ===")

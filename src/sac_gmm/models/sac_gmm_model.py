@@ -94,12 +94,15 @@ class SACGMM(SkillModel):
 
         features = self.agent.get_features_from_observation(batch[0])
         critic_loss = self.compute_critic_loss(batch, features, critic_optimizer)
-        actor_loss, alpha_loss = self.compute_actor_and_alpha_loss(batch, features, actor_optimizer, alpha_optimizer)
+        actor_loss, alpha_loss, policy_entropy = self.compute_actor_and_alpha_loss(
+            batch, features, actor_optimizer, alpha_optimizer
+        )
 
         losses = {
             "loss_critic": critic_loss,
             "loss_actor": actor_loss,
             "loss_alpha": alpha_loss,
+            "loss_entropy": policy_entropy,  # H = -E[log π], curva de entropía (W&B: loss_entropy)
             "alpha_value": self.alpha,
         }
         return losses
@@ -134,6 +137,10 @@ class SACGMM(SkillModel):
         Q_value = torch.min(q1, q2)
         actor_loss = (self.alpha * log_pi - Q_value).mean()
 
+        # Entropía de la política H = -E[log π] (diagnóstico, no se optimiza).
+        # Análogo a la "entropy loss" de PPO; disponible aunque alpha sea fija.
+        policy_entropy = -log_pi.mean().detach()
+
         actor_optimizer.zero_grad()
         self.manual_backward(actor_loss)
         actor_optimizer.step()
@@ -148,4 +155,4 @@ class SACGMM(SkillModel):
         else:
             alpha_loss = 0
 
-        return actor_loss, alpha_loss
+        return actor_loss, alpha_loss, policy_entropy

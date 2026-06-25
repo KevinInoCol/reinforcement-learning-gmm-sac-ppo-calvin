@@ -1,5 +1,5 @@
 # Environment params
 env_name: calvin
 show_gui: ${show_gui}
-ee_noise: [0.03, 0.03, 0.03]
+ee_noise: [0.05, 0.05, 0.0]  # var. (x,y) del EE por episodio; z fijo (altura de agarre). Baseline-variability (Maria)
 obs_space: ${obs_space} # ["state"], ["pos", "joints"], ["pos", "joints", "gripper"], ["state", "gripper"]

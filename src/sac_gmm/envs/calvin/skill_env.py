@@ -52,6 +52,10 @@ class CalvinSkillEnv(PlayTableSimEnv):
         self.is_source = cfg.is_source
         self.gt_keypoint = None
 
+        # Log de variabilidad: posición inicial del EE y offset gaussiano del último reset
+        self.last_start_ee_pos = None
+        self.last_ee_offset = None
+
     def load(self):
         logger.info("Resetting simulation")
         self.p.resetSimulation(physicsClientId=self.cid)
@@ -184,7 +188,8 @@ class CalvinSkillEnv(PlayTableSimEnv):
 
     def sample_base_shift(self):
         shift = np.array(self.skill.T_obj_gripper)
-        pos_shift = shift + np.random.normal(0.0, self.ee_noise, 3)
+        self.last_ee_offset = np.random.normal(0.0, self.ee_noise, 3)
+        pos_shift = shift + self.last_ee_offset
 
         gripper_pos = self.task_object_position() + pos_shift
         delta_pos = gripper_pos - self.init_gripper_pos
@@ -248,7 +253,12 @@ class CalvinSkillEnv(PlayTableSimEnv):
         self.start_info = self.get_info()
 
         self.set_gt_keypoint()
-        return self.get_obs()
+        obs = self.get_obs()
+        # Log de variabilidad: posición inicial del EE de este episodio (mundo, x,y,z)
+        self.last_start_ee_pos = (
+            np.asarray(obs["position"], dtype=float).tolist() if "position" in obs else None
+        )
+        return obs
 
     # @staticmethod
     def get_action_space(self):

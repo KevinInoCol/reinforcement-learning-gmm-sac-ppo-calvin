@@ -114,12 +114,12 @@ def main():
     # luego `wandb sync <dir>` desde el headnode (con internet) para subirlo.
     parser.add_argument("--wandb", action="store_true",
                         help="Activa logging a W&B (offline por defecto).")
-    parser.add_argument("--wandb_project", type=str, default="Project-Manipulador-RL-gmm-ppo")
+    parser.add_argument("--wandb_project", type=str, default="Project-RL-Manipulator-Arm")
     parser.add_argument("--wandb_name", type=str, default=None,
                         help="Nombre del run; por defecto se autogenera.")
     # Prefijo común de TODO este proyecto en W&B: agrupa y distingue estos runs
     # de los de otros proyectos en tu cuenta (rl_baseline, vqvae_baseline, ...).
-    parser.add_argument("--wandb_group", type=str, default="Project-Manipulador-RL")
+    parser.add_argument("--wandb_group", type=str, default="gmm_ppo")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else (

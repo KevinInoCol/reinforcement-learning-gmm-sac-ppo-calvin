@@ -129,10 +129,13 @@ class CALVINAgent(Agent):
         """Evaluates the actor in the environment"""
         log_rank_0("Evaluation episodes in process")
         succesful_episodes, episodes_returns, episodes_lengths = 0, [], []
+        episode_start_positions = []
         for episode in tqdm(range(1, self.num_eval_episodes + 1)):
             episode_return, episode_env_steps = 0, 0
 
             self.obs = self.env.reset()
+            # Log de variabilidad: posición inicial del EE de este episodio
+            episode_start_positions.append(getattr(self.env, "last_start_ee_pos", None))
             while episode_env_steps < self.skill.max_steps:
                 # detect target
                 target_pos = self.detect_target(obs=self.obs, device=device)
@@ -169,5 +172,8 @@ class CALVINAgent(Agent):
             episodes_returns.append(episode_return)
             episodes_lengths.append(episode_env_steps)
         accuracy = succesful_episodes / self.num_eval_episodes
+
+        # Expuesto para que el script de eval lo registre en el JSON de resultados
+        self.eval_start_positions = episode_start_positions
 
         return (accuracy, np.mean(episodes_returns), np.mean(episodes_lengths))

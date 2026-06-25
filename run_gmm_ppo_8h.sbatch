@@ -55,5 +55,6 @@ python scripts/gmm_ppo/gmm_ppo_train_sb3.py \
     --save_freq 20000 \
     --max_seconds 28800 \
     --wandb \
-    --wandb_project Project-Manipulador-RL-gmm-ppo \
+    --wandb_project Project-RL-Manipulator-Arm \
+    --wandb_group gmm_ppo \
     --wandb_name gmm_ppo_8h_${SLURM_JOB_ID}
