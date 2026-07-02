@@ -1,0 +1,30 @@
+{
+  "timestamp": "20260601_094617",
+  "agent": "SACGMM",
+  "skill": "calvin_open_drawer",
+  "env": "calvin",
+  "num_eval_episodes": 20,
+  "num_eval_seeds": 3,
+  "n_components_gmm": 3,
+  "chk_dir": "checkpoints/sac_gmm_open_drawer_best.ckpt",
+  "video_path": "Output_Inference/videos/eval_SACGMM_calvin_open_drawer_20260601_093930.mp4",
+  "accuracy_per_seed": [
+    0.65,
+    0.75,
+    0.75
+  ],
+  "accuracy_mean": 0.7166666666666667,
+  "accuracy_var": 0.0022222222222222214,
+  "return_per_seed": [
+    6.5,
+    7.5,
+    7.5
+  ],
+  "return_mean": 7.166666666666667,
+  "length_per_seed": [
+    56.75,
+    55.9,
+    54.4
+  ],
+  "length_mean": 55.68333333333334
+}
