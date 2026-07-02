@@ -1,0 +1,10 @@
+# A1-dense-reward (Aporte 1): escena D con recompensa DENSA.
+# Uso:
+#   SAC:  python scripts/sac_gmm_train.py ... env=calvin_scene_D_A1dense
+#   PPO:  python scripts/gmm_ppo/gmm_ppo_train_sb3.py ... --env calvin_scene_D_A1dense
+#   Eval: agent_eval_record.py env=calvin_scene_D_A1dense / gmm_ppo_eval.py --env calvin_scene_D_A1dense
+# Mapa completo del aporte: docs/APORTES.md
+defaults:
+  - calvin_scene_D
+
+reward_type: dense

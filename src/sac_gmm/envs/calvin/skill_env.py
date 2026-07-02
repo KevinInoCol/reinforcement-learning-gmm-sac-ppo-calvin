@@ -56,6 +56,16 @@ class CalvinSkillEnv(PlayTableSimEnv):
         self.last_start_ee_pos = None
         self.last_ee_offset = None
 
+        # A1-dense-reward (Aporte 1): tipo de recompensa configurable.
+        #   'sparse' -> baseline original (10 * success)
+        #   'dense'  -> shaping EE->asa + progreso de apertura (ver _reward y docs/APORTES.md)
+        self.reward_type = cfg.get("reward_type", "sparse")
+        _dr = cfg.get("dense_reward", None)
+        self.w_dist = float(_dr.w_dist) if _dr is not None else 5.0
+        self.w_prog = float(_dr.w_prog) if _dr is not None else 50.0
+        self._prev_ee_dist = None
+        self._prev_door_state = None
+
     def load(self):
         logger.info("Resetting simulation")
         self.p.resetSimulation(physicsClientId=self.cid)
@@ -258,6 +268,9 @@ class CalvinSkillEnv(PlayTableSimEnv):
         self.last_start_ee_pos = (
             np.asarray(obs["position"], dtype=float).tolist() if "position" in obs else None
         )
+        # A1-dense-reward: reinicia las referencias del shaping (se fijan en el 1er step)
+        self._prev_ee_dist = None
+        self._prev_door_state = None
         return obs
 
     # @staticmethod
@@ -323,9 +336,43 @@ class CalvinSkillEnv(PlayTableSimEnv):
 
     def _reward(self):
         """Returns the reward function that will be used
-        for the RL algorithm"""
-        reward = int(self._success()) * 10
-        r_info = {"reward": reward}
+        for the RL algorithm.
+
+        reward_type='sparse' (baseline): 10 solo al completar la tarea.
+        reward_type='dense' (A1-dense-reward, Aporte 1 — Maria 2026-07):
+            r_t = w_dist * (d_{t-1} - d_t)                  # acercamiento EE -> asa
+                + w_prog * (open_t - open_{t-1}) * dir      # progreso de apertura
+                + 10 * success                              # bono terminal (comparable al baseline)
+        Ambos terminos de shaping son deltas (potential-based): su suma telescopica
+        equivale a (distancia inicial - final) y (apertura total), lo que preserva
+        la politica optima (Ng et al., 1999) y no premia quedarse quieto.
+        """
+        success = self._success()
+        if self.reward_type == "sparse":
+            reward = int(success) * 10
+            r_info = {"reward": reward}
+            return reward, r_info
+
+        # --- A1-dense-reward ---
+        info = self.get_info()
+        ee_pos = np.array(info["robot_info"]["tcp_pos"])
+        handle_pos = np.array(self.task_object_position())
+        dist = float(np.linalg.norm(ee_pos - handle_pos))
+
+        task_filter = self.skill.name.split("_", 1)[1]
+        door_name, threshold = self.tasks.tasks[task_filter].args[:2]
+        door_state = float(info["scene_info"]["doors"][door_name]["current_state"])
+        direction = 1.0 if threshold >= 0 else -1.0  # open_drawer=+, close_drawer=-
+
+        if self._prev_ee_dist is None:  # primer step del episodio: delta = 0
+            self._prev_ee_dist, self._prev_door_state = dist, door_state
+
+        r_dist = self.w_dist * (self._prev_ee_dist - dist)
+        r_prog = self.w_prog * (door_state - self._prev_door_state) * direction
+        reward = r_dist + r_prog + int(success) * 10
+
+        self._prev_ee_dist, self._prev_door_state = dist, door_state
+        r_info = {"reward": reward, "r_dist": r_dist, "r_prog": r_prog}
         return reward, r_info
 
     def _termination(self):

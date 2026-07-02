@@ -2,4 +2,12 @@
 env_name: calvin
 show_gui: ${show_gui}
 ee_noise: [0.05, 0.05, 0.0]  # var. (x,y) del EE por episodio; z fijo (altura de agarre). Baseline-variability (Maria)
+# --- A1-dense-reward (Aporte 1, Maria 2026-07): tipo de recompensa ---
+# 'sparse' = baseline original (10 solo al completar la tarea)
+# 'dense'  = shaping: acercamiento EE->asa + progreso de apertura + bono de exito
+#            (activar con env=calvin_scene_D_A1dense o override env.reward_type=dense)
+reward_type: sparse
+dense_reward:
+  w_dist: 5.0   # peso del acercamiento EE->asa (potential-based: d_{t-1} - d_t)
+  w_prog: 50.0  # peso del progreso de apertura de la gaveta (delta del joint)
 obs_space: ${obs_space} # ["state"], ["pos", "joints"], ["pos", "joints", "gripper"], ["state", "gripper"]
