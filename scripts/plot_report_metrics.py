@@ -112,6 +112,10 @@ def fetch(run, key):
             y, x = row.get(key), row.get("_step")
             if y is None or x is None:
                 continue
+            try:
+                y = float(y)  # W&B serializa -inf como string "-Infinity"
+            except (TypeError, ValueError):
+                continue
             if not np.isfinite(y):  # descarta -inf/inf/nan (placeholders de eval en SAC)
                 continue
             xs.append(x)
