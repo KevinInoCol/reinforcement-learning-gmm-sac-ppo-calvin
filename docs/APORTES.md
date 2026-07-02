@@ -8,6 +8,9 @@ checkpoints, groups de W&B y carpetas de salida.
 > Baseline de referencia (NO tocar): recompensa esparsa (`reward_type=sparse`),
 > `ee_noise=[0.05,0.05,0.0]`, resultados 2026-07-02: GMM+SAC 63.3% / GMM+PPO 23.3%
 > (20 ep × 3 seeds). Checkpoints: `checkpoints/*_ee0.05_*_20260625.*`.
+> Lo anterior (Baseline-1, ee_noise=0.03) está archivado en
+> `checkpoints/_archive_baseline1_ee0.03/` — posiblemente la ÚNICA copia
+> (RECOD sobrescribió `logs/gmm_ppo_8h/` con el run 73596). No borrar.
 
 ---
 
