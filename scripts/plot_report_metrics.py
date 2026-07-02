@@ -126,16 +126,40 @@ def mov_avg(y, w):
     return np.convolve(y, np.ones(w) / w, mode="valid")
 
 
-def plot_metric(ax, run, key, color, smooth):
+# inner env.step() por outer step (gmm_window = max_steps/adapt_per_episode = 64/4)
+N_INNER = 16
+
+
+def env_scale(run):
+    """Factor para pasar el `_step` de W&B a environment steps (simulador), y así
+    comparar SAC vs PPO en la MISMA unidad. SAC loguea `eval_total-env-steps` (ya
+    son inner env.step); PPO loguea `global_step` (outer) -> x N_INNER = inner."""
+    if run is None:
+        return 1.0
+    s = run.summary
+    mx = s.get("_step")
+    if not mx:
+        return 1.0
+    if s.get("eval_total-env-steps"):
+        total = s["eval_total-env-steps"]
+    elif s.get("global_step") is not None:
+        total = s["global_step"] * N_INNER
+    else:
+        return 1.0
+    return float(total) / float(mx)
+
+
+def plot_metric(ax, run, key, color, smooth, scale=1.0):
     xs, ys = fetch(run, key)
     if not xs:
         ax.text(0.5, 0.5, f"no data\n({key})", ha="center", va="center",
                 transform=ax.transAxes, color="gray")
         return False
+    xs = [x * scale for x in xs]  # W&B step -> environment steps (simulador)
     ax.plot(xs, ys, color=color, alpha=0.30, marker="o", markersize=2, linewidth=0.8)
     ya = mov_avg(ys, smooth)
     ax.plot(xs[len(xs) - len(ya):], ya, color=color, label=f"moving average (w={smooth})")
-    ax.set_xlabel("step (W&B)")
+    ax.set_xlabel("environment steps (simulator)")
     ax.legend(fontsize=8)
     return True
 
@@ -162,13 +186,18 @@ def main():
 
     sac_run = pick_run(api, path, args.sac_group, args.sac_run)
     ppo_run = pick_run(api, path, args.ppo_group, args.ppo_run)
-    print(f"   GMM+SAC: {sac_run.name if sac_run else '—'}")
-    print(f"   GMM+PPO: {ppo_run.name if ppo_run else '—'}\n")
+    sac_scale = env_scale(sac_run)
+    ppo_scale = env_scale(ppo_run)
+    sac_env = (sac_run.summary.get("_step", 0) or 0) * sac_scale if sac_run else 0
+    ppo_env = (ppo_run.summary.get("_step", 0) or 0) * ppo_scale if ppo_run else 0
+    print(f"   GMM+SAC: {sac_run.name if sac_run else '—'}  (~{sac_env/1e6:.2f}M env steps)")
+    print(f"   GMM+PPO: {ppo_run.name if ppo_run else '—'}  (~{ppo_env/1e6:.2f}M env steps)\n")
 
     for fname, m in METRICS.items():
-        fig, (axs, axp) = plt.subplots(1, 2, figsize=(13, 4.5))
-        ok_s = plot_metric(axs, sac_run, m["sac"], "tab:blue", args.smooth)
-        ok_p = plot_metric(axp, ppo_run, m["ppo"], "tab:orange", args.smooth)
+        # sharex=True -> mismo rango de env-steps en ambos subplots => comparables
+        fig, (axs, axp) = plt.subplots(1, 2, figsize=(13, 4.5), sharex=True)
+        ok_s = plot_metric(axs, sac_run, m["sac"], "tab:blue", args.smooth, sac_scale)
+        ok_p = plot_metric(axp, ppo_run, m["ppo"], "tab:orange", args.smooth, ppo_scale)
         axs.set_title(f"GMM+SAC — {m['sac']}")
         axp.set_title(f"GMM+PPO — {m['ppo']}")
         axs.set_ylabel(m["ylabel"])
