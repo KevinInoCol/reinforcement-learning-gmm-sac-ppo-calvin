@@ -200,8 +200,11 @@ def main():
     print(f"   GMM+PPO: {ppo_run.name if ppo_run else '—'}  (~{ppo_env/1e6:.2f}M env steps)\n")
 
     for fname, m in METRICS.items():
-        # sharex=True -> mismo rango de env-steps en ambos subplots => comparables
-        fig, (axs, axp) = plt.subplots(1, 2, figsize=(13, 4.5), sharex=True)
+        # Misma UNIDAD (env steps) en ambos subplots, pero cada uno con su propio
+        # rango: SAC converge con ~6x menos interacción y con sharex quedaría
+        # aplastado a la izquierda e ilegible. La comparación se hace leyendo
+        # las escalas de los ejes (misma unidad).
+        fig, (axs, axp) = plt.subplots(1, 2, figsize=(13, 4.5))
         ok_s = plot_metric(axs, sac_run, m["sac"], "tab:blue", args.smooth, sac_scale)
         ok_p = plot_metric(axp, ppo_run, m["ppo"], "tab:orange", args.smooth, ppo_scale)
         axs.set_title(f"GMM+SAC — {m['sac']}")
