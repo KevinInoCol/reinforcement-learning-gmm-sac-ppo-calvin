@@ -40,14 +40,14 @@ ROOT = Path(__file__).resolve().parent.parent
 # Nombre de la métrica W&B por método. (clave_interna -> {sac, ppo})
 METRICS = {
     "reward_episodic": {
-        "title": "Recompensa acumulada por episodio",
-        "ylabel": "return / episodio",
+        "title": "Cumulative reward per episode",
+        "ylabel": "return / episode",
         "sac": "train_episode-return",
         "ppo": "rollout/ep_rew_mean",
     },
     "reward_eval": {
-        "title": "Recompensa media de evaluacion",
-        "ylabel": "return medio (eval)",
+        "title": "Mean evaluation reward",
+        "ylabel": "mean return (eval)",
         "sac": "eval_episode-avg-return",
         "ppo": "eval/mean_reward",
     },
@@ -64,8 +64,8 @@ METRICS = {
         "ppo": "train/value_loss",
     },
     "loss_entropy": {
-        "title": "Entropy loss  (SAC: H = -E[log pi], entropia de la politica)",
-        "ylabel": "loss / entropia",
+        "title": "Entropy loss  (SAC: H = -E[log pi], policy entropy)",
+        "ylabel": "loss / entropy",
         "sac": "loss_entropy",
         "ppo": "train/entropy_loss",
     },
@@ -129,12 +129,12 @@ def mov_avg(y, w):
 def plot_metric(ax, run, key, color, smooth):
     xs, ys = fetch(run, key)
     if not xs:
-        ax.text(0.5, 0.5, f"sin datos\n({key})", ha="center", va="center",
+        ax.text(0.5, 0.5, f"no data\n({key})", ha="center", va="center",
                 transform=ax.transAxes, color="gray")
         return False
     ax.plot(xs, ys, color=color, alpha=0.30, marker="o", markersize=2, linewidth=0.8)
     ya = mov_avg(ys, smooth)
-    ax.plot(xs[len(xs) - len(ya):], ya, color=color, label=f"media móvil (w={smooth})")
+    ax.plot(xs[len(xs) - len(ya):], ya, color=color, label=f"moving average (w={smooth})")
     ax.set_xlabel("step (W&B)")
     ax.legend(fontsize=8)
     return True
