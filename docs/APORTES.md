@@ -89,3 +89,61 @@ rescata el seed 44 de 45%→80%) pero NO al on-policy (PPO idéntico: abre el ca
 mismos 14/60 episodios — verificado: posiciones iniciales idénticas entre ambos evals de PPO,
 comparación pareada). El return de PPO sí sube (2.33→5.08: se acerca más al asa), pero no se
 traduce en aperturas. El beneficio de la recompensa densa depende del algoritmo.
+
+---
+
+## A2-ppo-horizon — Ajuste de PPO para la recompensa densa (Maria, 2026-07)
+
+**Solo GMM+PPO** (SAC no se toca; estos hiperparámetros son propios de PPO/SB3).
+Construido **SOBRE A1**: usa la recompensa densa (`env=calvin_scene_D_A1dense`).
+
+**Hipótesis:** con recompensa densa, PPO necesita un horizonte más largo (cada paso ya
+lleva información útil) y rollouts más grandes (compensar la menor diversidad de episodios
+por update al alargarse el episodio). Objetivo: destrabar el 23.3% de PPO.
+
+### Qué cambia (solo hiperparámetros — NO cambia código)
+
+| Parámetro | A1 | A2 | Motivo |
+|---|---|---|---|
+| `max_outer_steps` | 4 | **8** | horizonte 2× (8 decisiones/episodio) |
+| `n_steps` | 2048 | **4096** | rollout 2× → compensa menos episodios/update |
+| `ent_coef` | 0.01 | **0.001** | menos exploración forzada (ya hay señal densa) |
+| `learning_rate` | 3e-4 | **1e-4** | updates más estables con rollouts largos |
+| `n_epochs` | 10 | **5** | menos reuso → datos más frescos |
+| `gamma` | 0.99 | 0.99 | sin cambio |
+| `n_inner_steps` | 16 | 16 | sin cambio (episodio = 8×16 = 128 inner steps) |
+
+### Artefacto reproducible (decisión: sbatch congelado, NO script duplicado)
+
+`run_gmm_ppo_8h_A2.sbatch` — todos los hiperparámetros explícitos. El script de training
+`scripts/gmm_ppo/gmm_ppo_train_sb3.py` es genérico/parametrizado y NO se duplica (evita
+code-drift). W&B group = `gmm_ppo_A2`; salidas en `logs/gmm_ppo_8h_A2/`.
+
+### Convención
+
+| Qué | Nombre |
+|---|---|
+| W&B group | `gmm_ppo_A2` (project `Project-RL-Manipulator-Arm`) |
+| Checkpoints | `checkpoints/A2-ppo-horizon/` |
+| Figuras | `Output_Training/A2-ppo-horizon/` |
+| Videos/JSON | `Output_Inference/{videos,results_table}/A2-ppo-horizon/` |
+| sbatch | `run_gmm_ppo_8h_A2.sbatch` |
+
+### Eval (OJO: usar `--max_outer_steps 8`, igual que en training)
+
+```bash
+python3 scripts/gmm_ppo/gmm_ppo_eval.py \
+    --model "$(pwd)/checkpoints/A2-ppo-horizon/gmm_ppo_open_drawer_A2_best_<fecha>.zip" \
+    --skill calvin_open_drawer --env calvin_scene_D_A1dense \
+    --num_episodes 20 --num_seeds 3 --seed 42 \
+    --n_inner_steps 16 --max_outer_steps 8 --mu_change_range 0.03 \
+    --show_gui --record_video --step_delay 0.05
+```
+
+### Resultados
+
+| Experimento | Método | Accuracy | seed 42 | seed 43 | seed 44 | Var |
+|---|---|---|---|---|---|---|
+| A2-ppo-horizon | GMM+PPO | _pendiente_ | | | | |
+
+Referencia a superar: GMM+PPO A1 = 23.3%.
