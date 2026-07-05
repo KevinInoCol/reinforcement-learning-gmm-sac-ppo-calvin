@@ -147,3 +147,58 @@ python3 scripts/gmm_ppo/gmm_ppo_eval.py \
 | A2-ppo-horizon | GMM+PPO | _pendiente_ | | | | |
 
 Referencia a superar: GMM+PPO A1 = 23.3%.
+
+---
+
+## A3-sac-tuning — Ajuste de SAC para la recompensa densa (Maria, 2026-07)
+
+**Solo GMM+SAC.** Construido **SOBRE A1** (`env=calvin_scene_D_A1dense`). Ajusta
+hiperparámetros de SAC para alinearlos con la literatura estándar cuando se usa
+recompensa densa. Objetivo: superar el 80.0% de SAC A1.
+
+### Qué cambia (overrides Hydra — NO se editan los configs base del baseline)
+
+| Parámetro | A1 | A3 | Config base |
+|---|---|---|---|
+| `sac.replay_buffer.max_capacity` | 5e6 | **1e6** | sac/replay_buffer/default.yaml |
+| `sac.batch_size` | 32 | **256** | sac/default.yaml |
+| `num_init_steps` | 32 | **1000** | sac_gmm_train.yaml |
+| `sac.discount` | 0.99 | **0.97** | sac/default.yaml |
+| `sac.optimize_alpha` | false | **true** | sac/default.yaml |
+| `sac.init_alpha` | 0.002 | **0.1** | sac/default.yaml |
+| `sac.alpha_lr` | 3e-5 | **3e-4** | sac/default.yaml |
+| `sac.actor_lr` / `sac.critic_lr` | 3e-5 | **3e-4** | sac/default.yaml |
+| `sac.critic_tau` | 0.005 | 0.005 | (sin cambio) |
+| `sac.actor.hidden_dim` / `sac.critic.hidden_dim` | 1024 | **512** | sac/{actor,critic}/default.yaml |
+
+Nota: con `optimize_alpha=true` ahora se optimiza la temperatura α (antes fija). La curva
+de entropía sigue saliendo vía `loss_entropy` (H de la política, que se loguea siempre).
+
+### Artefacto reproducible
+
+`run_sac_gmm_A3.sbatch` — todos los overrides explícitos. Script de training genérico
+(`scripts/sac_gmm_train.py`) sin duplicar. W&B group = `gmm_sac_A3`.
+
+### Convención
+
+| Qué | Nombre |
+|---|---|
+| W&B group | `gmm_sac_A3` |
+| Checkpoints | `checkpoints/A3-sac-tuning/` |
+| Figuras | `Output_Training/A3-sac-tuning/` |
+| Videos/JSON | `Output_Inference/{videos,results_table}/A3-sac-tuning/` |
+| sbatch | `run_sac_gmm_A3.sbatch` |
+
+### Eval
+
+Mismo comando que SAC A1 (`agent_eval_record.py ... env=calvin_scene_D_A1dense`), apuntando
+al checkpoint A3. La arquitectura (hidden_dim=512) se reconstruye desde los hparams guardados
+en el checkpoint (`load_from_checkpoint`), igual que en A1 — **verificar en el primer eval**.
+
+### Resultados
+
+| Experimento | Método | Accuracy | seed 42 | seed 43 | seed 44 | Var |
+|---|---|---|---|---|---|---|
+| A3-sac-tuning | GMM+SAC | _pendiente_ | | | | |
+
+Referencia a superar: GMM+SAC A1 = 80.0%.
