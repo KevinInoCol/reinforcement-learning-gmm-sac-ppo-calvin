@@ -70,9 +70,22 @@ El baseline sigue reproducible con los comandos de siempre (`env=calvin_scene_D`
 - Magnitudes aprox. por episodio exitoso: acercamiento ≈ +2, apertura ≈ +6, bono = 10.
 - `r_info` expone `r_dist` y `r_prog` por separado (debug/curvas).
 
-### Resultados
+### Resultados (eval 20 ep × 3 seeds = 60, seeds 42/43/44, ee_noise=0.05)
 
-| Método | Baseline (sparse) | A1-dense | Δ |
-|---|---|---|---|
-| GMM+SAC | 63.3% | _pendiente_ | |
-| GMM+PPO | 23.3% | _pendiente_ | |
+Accuracy = tasa de éxito binaria (`info["success"]`), comparable entre filas.
+Videos/JSON: `Output_Inference/{videos,results_table}/A1-dense-reward/`.
+
+| Experimento | Método | Accuracy | seed 42 | seed 43 | seed 44 | Var |
+|---|---|---|---|---|---|---|
+| Baseline-2 (sparse) | GMM+SAC | 63.3% | 75% | 70% | 45% | 0.017 |
+| Baseline-2 (sparse) | GMM+PPO | 23.3% | 5% | 35% | 30% | 0.017 |
+| A1-dense | GMM+SAC | **80.0%** | 80% | 80% | 80% | 0.000 |
+| A1-dense | GMM+PPO | 23.3% | 5% | 35% | 30% | 0.017 |
+
+**Δ del aporte:** GMM+SAC **63.3% → 80.0% (+16.7 pts)** ✅ ; GMM+PPO **23.3% → 23.3% (±0)** ⚪.
+
+**Hallazgo:** la recompensa densa ayuda al método off-policy (SAC: +16.7 pts, varianza 0→0,
+rescata el seed 44 de 45%→80%) pero NO al on-policy (PPO idéntico: abre el cajón en los
+mismos 14/60 episodios — verificado: posiciones iniciales idénticas entre ambos evals de PPO,
+comparación pareada). El return de PPO sí sube (2.33→5.08: se acerca más al asa), pero no se
+traduce en aperturas. El beneficio de la recompensa densa depende del algoritmo.
