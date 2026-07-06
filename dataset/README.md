@@ -140,3 +140,29 @@ python3 scripts/gmm_ppo/gmm_ppo_eval.py \
 
 
 
+GMM+SAC A1:
+SACGMM_STEP_DELAY=0.05 python3 scripts/agent_eval_record.py \
+    skill=calvin_open_drawer \
+    agent=sac_gmm_calvin \
+    env=calvin_scene_D_A1dense \
+    chk_dir="$(pwd)/checkpoints/A1-dense-reward/gmm_sac_open_drawer_A1dense_best-return17.11_20260703.ckpt" \
+    show_gui=true \
+    env.calvin_env.env.show_gui=true \
+    env.calvin_env.env.use_egl=false \
+    num_eval_episodes=20 \
+    num_eval_seeds=3
+
+GMM+PPO A1:
+python3 scripts/gmm_ppo/gmm_ppo_eval.py \
+    --model "$(pwd)/checkpoints/A1-dense-reward/gmm_ppo_open_drawer_A1dense_best_20260703.zip" \
+    --skill calvin_open_drawer \
+    --env calvin_scene_D_A1dense \
+    --num_episodes 20 \
+    --num_seeds 3 \
+    --seed 42 \
+    --n_inner_steps 16 \
+    --max_outer_steps 4 \
+    --mu_change_range 0.03 \
+    --show_gui \
+    --record_video \
+    --step_delay 0.05
