@@ -144,9 +144,16 @@ python3 scripts/gmm_ppo/gmm_ppo_eval.py \
 
 | Experimento | Método | Accuracy | seed 42 | seed 43 | seed 44 | Var |
 |---|---|---|---|---|---|---|
-| A2-ppo-horizon | GMM+PPO | _pendiente_ | | | | |
+| A2-ppo-horizon | GMM+PPO | **58.3%** | 50% | 65% | 60% | 0.004 |
 
-Referencia a superar: GMM+PPO A1 = 23.3%.
+**Δ:** GMM+PPO A1 23.3% → **A2 58.3% (+35 pts)** 🚀. Videos/JSON en `*/A2-ppo-horizon/`;
+checkpoint `checkpoints/A2-ppo-horizon/gmm_ppo_open_drawer_A2_best_20260706.zip`.
+
+**Hallazgo (dos etapas):** la recompensa densa SOLA (A1) no movió a PPO; recién con horizonte
+más largo (max_outer 4→8) + rollouts grandes (n_steps 2048→4096) + menos exploración/lr
+(A2) PPO saltó +35 pts. En PPO on-policy, recompensa densa y horizonte son **complementarios**.
+Nota: en los éxitos, PPO abre el cajón en 1–5 outer steps (< 8), i.e. resuelve rápido cuando
+puede; los fracasos agotan los 8 → el horizonte largo ayuda sin penalizar los casos fáciles.
 
 ---
 
